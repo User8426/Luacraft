@@ -45,8 +45,6 @@ playerInfos = {
   
 }
 
-local counter = 0
-local counter2 = 0
 local PI = 3.14159265358979323846
 
 rl.UpdateCamera(playerInfos.Player1.Camera, rl.CAMERA_FIRST_PERSON)
@@ -426,9 +424,6 @@ function renderMapMeshes()
 end
 
 function renderMapBasic()
-    counter = 0
-    counter2 = 0
-
     --local cubePosition = rl.new("Vector3",0,4,0)
    -- local matrixTransformation = rl.new("Matrix",1,0,0,0,0,1,0,0,0,0,1,0,cubePosition.x,cubePosition.y,cubePosition.z,1)
    -- rl.DrawMesh(cubeMesh, defaultMaterial , matrixTransformation)
@@ -743,7 +738,6 @@ function renderMapBasic()
                   
                   
                 end
-                counter2 = counter2 + 6
             end
           end
         end
@@ -788,13 +782,32 @@ function singularCubeRender()
     rl.DrawMesh(cubeMesh, defaultMaterial , matrixTransformation)
 end
 
+function drawHUD()
+  --Draw crosshair
+  
+  local crosshairSize = 20
+  local crosshairSize2 = 2
+  local centerScreenX = gameSettings.WindowResolution.x / 2
+  local centerScreenY = gameSettings.WindowResolution.y / 2
+
+  rl.DrawLineEx(rl.new("Vector2",centerScreenX - crosshairSize2,centerScreenY), rl.new("Vector2",centerScreenX + crosshairSize2,centerScreenY), crosshairSize, rl.WHITE)
+  rl.DrawLineEx(rl.new("Vector2",centerScreenX, centerScreenY - crosshairSize2), rl.new("Vector2",centerScreenX,centerScreenY + crosshairSize2), crosshairSize, rl.WHITE)
+
+
+  --Debug Info
+  rl.DrawFPS(0,0)
+
+  rl.DrawText("Camera Position: " .. string.format("%.2f",localCam.position.x) .. "/" .. string.format("%.2f",localCam.position.y) .. "/" .. string.format("%.2f",localCam.position.z) , 0, 20, 20, rl.BLACK)
+  rl.DrawText("Camera Target: " ..string.format("%.2f",localCam.target.x) .. "/" .. string.format("%.2f",localCam.target.y) .. "/" .. string.format("%.2f",localCam.target.z) , 0, 40, 20, rl.BLACK)
+
+
+end
+
 function windowDraw()
   rl.UpdateCamera(playerInfos.Player1.Camera, rl.CAMERA_FIRST_PERSON)
 
   rl.BeginDrawing()
   rl.ClearBackground(rl.SKYBLUE)
-
-  debugText = tostring(counter) .. "/" .. tostring(counter2)
 
   --3D
   local localCam = playerInfos.Player1.Camera
@@ -809,13 +822,9 @@ function windowDraw()
   rl.EndMode3D()
 
   --2D
-  rl.DrawFPS(0,0)
-	rl.DrawText("Rendering is working maybe", 190, 200, 20, rl.BLACK)
-  rl.DrawText(debugText, 190, 400, 20, rl.BLACK)
-
-  rl.DrawText("Camera Position: " .. string.format("%.2f",localCam.position.x) .. "/" .. string.format("%.2f",localCam.position.y) .. "/" .. string.format("%.2f",localCam.position.z) , 0, 20, 20, rl.BLACK)
-  rl.DrawText("Camera Target: " ..string.format("%.2f",localCam.target.x) .. "/" .. string.format("%.2f",localCam.target.y) .. "/" .. string.format("%.2f",localCam.target.z) , 0, 40, 20, rl.BLACK)
-
+  
+  drawHUD()
+  
 	rl.EndDrawing()
   
   
