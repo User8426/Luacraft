@@ -10,8 +10,8 @@ gameSettings = {
 
 chunkSettings = {
     maxHeight = 256,
-    width = 32,
-    depth = 32,
+    width = 16,
+    depth = 16,
 }
 
 playerInfos = {
@@ -904,6 +904,8 @@ while not rl.WindowShouldClose() do
     local coroutineChunkGen = coroutine.create(function(cX, cY)
       if not currentLoadedMap[cX] or not currentLoadedMap[cX][cY] then
         chunkGeneration(cX,cY)
+      elseif not currentLoadedMapMeshes[cX] or not currentLoadedMapMeshes[cX][cY] then
+        chunkMeshGenerator(cX,cY) -- if unloaded
       end
     end)
     
@@ -917,7 +919,35 @@ while not rl.WindowShouldClose() do
     --  end
     --end
     
+    for xCoord, unusedvar in pairs(currentLoadedMapMeshes) do
+      
+      if playerXChunk > xCoord + gameSettings.renderDistance or playerXChunk < xCoord - gameSettings.renderDistance then
+        for i, tempvar3 in pairs(currentLoadedMapMeshes[xCoord]) do
+          --rl.UnloadMesh(currentLoadedMapMeshes[xCoord][i]) -- crashes?
+        end
+        
+        currentLoadedMapMeshes[xCoord] = nil
+      else
+        for yCoord, unusedvar2 in pairs(currentLoadedMapMeshes[xCoord]) do
+          if playerYChunk > yCoord + gameSettings.renderDistance or playerYChunk < yCoord - gameSettings.renderDistance then
+            --add unload mesh code
+            
+            currentLoadedMapMeshes[xCoord][yCoord] = nil
+
+          end
+        end
+      end
+      
+    end
+    
     --add code to remove old chunks that are too far here
+    
+    --Now unload chunks that are too far, only unloading meshes for now
+    
+    
+    
+    
+    
     
   end
   
