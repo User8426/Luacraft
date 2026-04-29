@@ -726,7 +726,7 @@ function chunkGeneration(X,Y)
         
         else
           
-          if localY == 64 and math.random(0,4) == 1 then
+          if localY == 64 and math.random(4) == 1 then
             localChunk[localX][localZ][localY] = 1
           else
             localChunk[localX][localZ][localY] = 0
