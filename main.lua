@@ -204,7 +204,7 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 0] = 0
               normalTable[(triangleCount*9) + 1] = 1
               normalTable[(triangleCount*9) + 2] = 0
-              textureCoordTable[(triangleCount*6) + 0] = 0
+              textureCoordTable[(triangleCount*6) + 0] = 1
               textureCoordTable[(triangleCount*6) + 1] = 1
           
               -- Vertex at (1, 0, 1)
@@ -214,7 +214,7 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 3] = 0
               normalTable[(triangleCount*9) + 4] = 1
               normalTable[(triangleCount*9) + 5] = 0
-              textureCoordTable[(triangleCount*6) + 2] = 1
+              textureCoordTable[(triangleCount*6) + 2] = 0
               textureCoordTable[(triangleCount*6) + 3] = 0
           
               -- Vertex at (1, 0, 0)
@@ -224,7 +224,7 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 6] = 0
               normalTable[(triangleCount*9) + 7] = 1
               normalTable[(triangleCount*9) + 8] = 0
-              textureCoordTable[(triangleCount*6) + 4] = 1
+              textureCoordTable[(triangleCount*6) + 4] = 0
               textureCoordTable[(triangleCount*6) + 5] = 1
               
               triangleCount = triangleCount + 1    
@@ -236,7 +236,7 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 0] = 0
               normalTable[(triangleCount*9) + 1] = 1
               normalTable[(triangleCount*9) + 2] = 0
-              textureCoordTable[(triangleCount*6) + 0] = 1
+              textureCoordTable[(triangleCount*6) + 0] = 0
               textureCoordTable[(triangleCount*6) + 1] = 0
           
               -- Vertex at (0, 0, 0)
@@ -246,7 +246,7 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 3] = 0
               normalTable[(triangleCount*9) + 4] = 1
               normalTable[(triangleCount*9) + 5] = 0
-              textureCoordTable[(triangleCount*6) + 2] = 0
+              textureCoordTable[(triangleCount*6) + 2] = 1
               textureCoordTable[(triangleCount*6) + 3] = 1
           
               -- Vertex at (0, 0, 1) 
@@ -256,7 +256,7 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 6] = 0
               normalTable[(triangleCount*9) + 7] = 1
               normalTable[(triangleCount*9) + 8] = 0
-              textureCoordTable[(triangleCount*6) + 4] = 0
+              textureCoordTable[(triangleCount*6) + 4] = 1
               textureCoordTable[(triangleCount*6) + 5] = 0
               
               
