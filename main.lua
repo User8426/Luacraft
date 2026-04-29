@@ -93,10 +93,14 @@ function chunkMeshGenerator(X,Y)
   local normalTable = {}
   local textureCoordTable = {}
   
+  local threadsMade = chunkSettings.maxHeight
+  local threadsCompleted = 0
+  
   local ChunkTable = currentLoadedMap[X][Y]
   for localXi = 0, chunkSettings.width, 1 do -- cube
     for localZi = 0, chunkSettings.depth, 1 do 
-      for localYi = 0, chunkSettings.maxHeight, 1 do
+      --local threadYAxis = coroutine.create(function() 
+        for localYi = 0, chunkSettings.maxHeight, 1 do
           local cube = ChunkTable[localXi][localZi][localYi]  
                 
           local cubePosition = rl.new("Vector3",localXi + ((chunkSettings.width + 1) * X) ,localYi,localZi + ((chunkSettings.depth + 1) * Y))
@@ -303,9 +307,16 @@ function chunkMeshGenerator(X,Y)
               --triangleCount = triangleCount + 2           
             end
           end
-      end
+        end
+        --threadsCompleted = threadsCompleted + 1
+      --end)
+      --coroutine.resume(threadYAxis)
     end
   end
+  
+ -- while threadsCompleted < threadsMade do
+    
+ -- end
   
 -- We know triangle count now as 2 per plane
 
@@ -850,8 +861,9 @@ while not rl.WindowShouldClose() do
     local foundAChunkThisFrame = false
     local exceededRenderDistance = false
     
-    local foundChunkX 
-    local foundChunkY
+    local foundChunkX = {}
+    local foundChunkY = {}
+    local foundChunks = 0
     
     local currentRenderDistanceCheck = 0 
     local currentRenderDistanceTestValueX = 0
@@ -861,9 +873,9 @@ while not rl.WindowShouldClose() do
       --print("player" .. playerXChunk .. "/" .. playerYChunk .. "chunk" .. currentRenderDistanceTestValueX .. "/" .. currentRenderDistanceTestValueY)
       
       if not currentLoadedMapMeshes[currentRenderDistanceTestValueX + playerXChunk] or not currentLoadedMapMeshes[currentRenderDistanceTestValueX + playerXChunk][currentRenderDistanceTestValueY + playerYChunk] then
-        foundChunkX = currentRenderDistanceTestValueX + playerXChunk
-        foundChunkY = currentRenderDistanceTestValueY + playerYChunk
-        foundAChunkThisFrame = true
+        foundChunkX[foundChunks] = currentRenderDistanceTestValueX + playerXChunk
+        foundChunkY[foundChunks] = currentRenderDistanceTestValueY + playerYChunk
+        --foundAChunkThisFrame = true -- replaced for coroutines
       end
       
       if currentRenderDistanceTestValueX == currentRenderDistanceCheck then
@@ -889,11 +901,21 @@ while not rl.WindowShouldClose() do
       
     end
     
-    if foundAChunkThisFrame then
-      if not currentLoadedMap[foundChunkX] or not currentLoadedMap[foundChunkX][foundChunkY] then
-        chunkGeneration(foundChunkX,foundChunkY)
+    local coroutineChunkGen = coroutine.create(function(cX, cY)
+      if not currentLoadedMap[cX] or not currentLoadedMap[cX][cY] then
+        chunkGeneration(cX,cY)
       end
+    end)
+    
+    for i = 0, foundChunks, 1 do
+      coroutine.resume(coroutineChunkGen, foundChunkX[i], foundChunkY[i])
     end
+    
+    --if foundAChunkThisFrame then
+    --  if not currentLoadedMap[foundChunkX] or not currentLoadedMap[foundChunkX][foundChunkY] then
+    --    chunkGeneration(foundChunkX,foundChunkY)
+    --  end
+    --end
     
     --add code to remove old chunks that are too far here
     
