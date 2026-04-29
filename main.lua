@@ -190,7 +190,7 @@ function chunkMeshGenerator(X,Y)
             end
             
             
-            if sidesToRender[1] then -- X+
+            if sidesToRender[6] then -- X+
               --generate side and input in tables
               --vertexTable
               --normalTable
@@ -264,7 +264,7 @@ function chunkMeshGenerator(X,Y)
               
               
             end
-            if sidesToRender[2] then -- X-
+            if sidesToRender[5] then -- X-
               --generate side and input in tables
               --vertexTable
               --normalTable
@@ -492,7 +492,7 @@ function chunkMeshGenerator(X,Y)
               
               --triangleCount = triangleCount + 2            
             end
-            if sidesToRender[5] then -- Z+
+            if sidesToRender[2] then -- Z+
               --generate side and input in tables
               --vertexTable
               --normalTable
@@ -570,7 +570,7 @@ function chunkMeshGenerator(X,Y)
               triangleCount = triangleCount + 1    
               
             end
-            if sidesToRender[6] then -- Z-
+            if sidesToRender[1] then -- Z-
               --generate side and input in tables
               --vertexTable
               --normalTable
