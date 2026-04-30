@@ -47,6 +47,7 @@ playerInfos = {
 
 local PI = 3.14159265358979323846
 
+rl.InitWindow(gameSettings.WindowResolution.x, gameSettings.WindowResolution.y, gameSettings.defaultWindowTitle)
 rl.UpdateCamera(playerInfos.Player1.Camera, rl.CAMERA_FIRST_PERSON)
 
 shapeInfos = {
@@ -57,15 +58,89 @@ shapeInfos = {
 
 local appDirectory =  rl.GetApplicationDirectory()
 
-images = {
-    Dirt = rl.LoadImage("Assets/GrassSide.png") -- Dirt.png
+images = { --Image, Texture, MegaX (DO NOT DEFINE), MegaY (DO NOT DEFINE)
+    Dirt = {}, 
+    GrassSide = {}, 
+    GrassTop = {},
 }
 
+for i, imageTable in pairs(images) do  
+  local fileName = "Assets/" .. i .. ".png"
+  
+  imageTable[1] = rl.LoadImage(fileName)
+  imageTable[2] = rl.LoadTexture(fileName)
+end
+
+
+local bigImage
+local tempBigImage
+
+function createBigImage()
+  local xSize = 1
+  local ySize = 1
+  local imageWidth = 32
+  local imageHeight = 32
+  
+  local amountOfImages = 0
+  for _, imageTable in pairs(images) do
+    amountOfImages = amountOfImages + 1
+  end
+  
+  while xSize * ySize < amountOfImages do
+    if xSize == ySize then
+      xSize = xSize + 1
+    else  
+      ySize = ySize + 1
+    end
+  end
+  
+  bigImage = rl.new("Texture",  xSize * imageWidth, ySize * imageHeight)
+  tempBigImage = rl.new("Image", nil, xSize * imageWidth, ySize * imageHeight)
+ 
+  tempBigImage.data = nil
+  tempBigImage.width = xSize * imageWidth
+  tempBigImage.height = ySize * imageHeight
+  tempBigImage.format = rl.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8
+  --tempBigImage.mipmaps = 1
+
+
+  
+  --= ffi.new("Image[" .. (1) .. "]", {})
+  
+  local currentCursorX = 0
+  local currentCursorY = 0
+  
+  for _, imageTable in pairs(images) do
+    imageTable[3] = currentCursorX
+    imageTable[4] = currentCursorY
+    
+    local srcRes = rl.new("Rectangle", 0,0,imageWidth,imageHeight)
+    local destRes = rl.new("Rectangle", imageWidth*currentCursorX,imageHeight*currentCursorY,imageWidth,imageHeight)
+    local tint = rl.WHITE
+    
+    rl.ImageDraw(tempBigImage, imageTable[1], srcRes, destRes, tint)
+    
+    currentCursorX = currentCursorX + 1
+    if currentCursorX == xSize then
+      currentCursorY = currentCursorY + 1
+    end
+
+end
+  
+  bigImage = rl.LoadTextureFromImage(tempBigImage)
+  print(bigImage)
+  print("big iamge created")
+  
+end
+
+createBigImage()
+
+-- create bigImage here
 
 blockInfos = {
-    {"Air", false, 0, "", "", "", "", "", ""}, -- Name, Render?, Shape, Up, Down, Left, Right, Forward, Back
-    {"Dirt", true, 0, "", "", "", "", "", ""}, -- Name, Render?, Shape, Up, Down, Left, Right, Forward, Back
-
+    {"Air", false, true, 0, "", "", "", "", "", ""}, -- Name, Render?, DisableFaceCulling, Shape, Up, Down, Left, Right, Forward, Back
+    {"Dirt", true, false, 0, "Dirt", "Dirt", "Dirt", "Dirt", "Dirt", "Dirt"}, -- Name, Render?, DisableFaceCulling, Shape, Up, Down, Left, Right, Forward, Back
+    {"Grass", true, false, 0, "GrassTop", "Dirt", "GrassSide", "GrassSide", "GrassSide", "GrassSide"}, -- Name, Render?, DisableFaceCulling, Shape, Up, Down, Left, Right, Forward, Back
 }
 
 currentLoadedMap = {} -- children are chunks, which then has the info for individual blocks
@@ -73,12 +148,7 @@ currentLoadedMapMeshes = {} -- children are chunks, then its a mesh for the chun
 
 --rl.SetConfigFlags(rl.FLAG_VSYNC_HINT)
 
-rl.InitWindow(gameSettings.WindowResolution.x, gameSettings.WindowResolution.y, gameSettings.defaultWindowTitle)
-
-textures = {
- -- Dirt = rl.LoadImage( appDirectory .. "/Assets/Dirt.png")
-    Dirt = rl.LoadTextureFromImage(images.Dirt)
-}
+--rl.InitWindow(gameSettings.WindowResolution.x, gameSettings.WindowResolution.y, gameSettings.defaultWindowTitle)
 
 
 --function updateChunkMesh(needsCreating, X,Y)
@@ -759,7 +829,7 @@ local planeMesh = rl.GenMeshPlane(1,1,1,1)
 
 local defaultMaterial = rl.LoadMaterialDefault()
 
-rl.SetMaterialTexture(defaultMaterial, rl.MATERIAL_MAP_DIFFUSE, textures.Dirt)
+rl.SetMaterialTexture(defaultMaterial, rl.MATERIAL_MAP_DIFFUSE, bigImage)
 
 function renderMapMeshes()
   for chunkXi, chunkY in pairs(currentLoadedMapMeshes) do
