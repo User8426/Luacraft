@@ -50,6 +50,8 @@ local PI = 3.14159265358979323846
 rl.InitWindow(gameSettings.WindowResolution.x, gameSettings.WindowResolution.y, gameSettings.defaultWindowTitle)
 rl.UpdateCamera(playerInfos.Player1.Camera, rl.CAMERA_FIRST_PERSON)
 
+rl.SetWindowState(rl.FLAG_MSAA_4X_HINT)
+
 shapeInfos = {
     "Cube",
     
@@ -75,6 +77,8 @@ end
 local bigImage
 local tempBigImage
 
+local bigImageSize = rl.new("Vector2", 1, 1)
+
 function createBigImage()
   local xSize = 1
   local ySize = 1
@@ -94,6 +98,9 @@ function createBigImage()
     end
   end
   
+  xSize = xSize * 3 -- prevent bleed via stupid methods
+  ySize = ySize * 3
+  
   bigImage = rl.new("Texture")
   
   bigImage.width = xSize * imageWidth
@@ -111,6 +118,8 @@ function createBigImage()
   print("here")
   print(tempBigImage)
   print(tempBigImage.data)
+  
+
 
   
   --= ffi.new("Image[" .. (1) .. "]", {})
@@ -119,26 +128,38 @@ function createBigImage()
   local currentCursorY = 0
   
   for _, imageTable in pairs(images) do
-    imageTable[3] = currentCursorX
-    imageTable[4] = currentCursorY
+    imageTable[3] = currentCursorX + 2
+    imageTable[4] = currentCursorY + 2
     
     local srcRes = rl.new("Rectangle", 0,0,imageWidth,imageHeight)
-    local destRes = rl.new("Rectangle", imageWidth*currentCursorX,imageHeight*currentCursorY,imageWidth,imageHeight)
     local tint = rl.WHITE
     
-    rl.ImageDraw(tempBigImage, imageTable[1], srcRes, destRes, tint)
+    for i = 1, 3, 1 do
+      for i2 = 1, 3, 1 do
+      local destRes = rl.new("Rectangle", imageWidth*(currentCursorX+ i),imageHeight*(currentCursorY+ i2),imageWidth,imageHeight)
+      rl.ImageDraw(tempBigImage, imageTable[1], srcRes, destRes, tint)
+      end
+    end
     
-    currentCursorX = currentCursorX + 1
+    
+    currentCursorX = currentCursorX + 3
     if currentCursorX == xSize then
-      currentCursorY = currentCursorY + 1
+      currentCursorY = currentCursorY + 3
+      currentCursorX = 0
     end
 
 end
   
   bigImage = rl.LoadTextureFromImage(tempBigImage)
 
-  print("here2")
-  print(tempBigImage.data)
+  rl.SetTextureWrap(bigImage, rl.TEXTURE_WRAP_CLAMP)
+  rl.SetTextureFilter(bigImage, rl.TEXTURE_FILTER_POINT)
+  
+  bigImageSize.x = xSize
+  bigImageSize.y = ySize
+
+  --print("here2")
+  --print(tempBigImage.data)
   
 end
 
@@ -195,12 +216,32 @@ function chunkMeshGenerator(X,Y)
           local render = false
           local renderAsSides = false
           local sidesToRender = {false,false,false,false,false,false}
+          local imageSides = {blockInfos[cube][10], blockInfos[cube][9], blockInfos[cube][5], blockInfos[cube][6], blockInfos[cube][8], blockInfos[cube][7]}
+          
+          --imageSides = {"Dirt","Dirt","GrassTop","Dirt","Dirt","Dirt",}
+
+         --Up[5], Down[6], Left[7], Right[8], Forward[9], Back[10]
+         --3         4        6        5         2          1
+        
+
+         -- imageSides[1] = blockInfos[cube][5]
+         -- imageSides[2] = blockInfos[cube][6]
+         -- imageSides[3] = blockInfos[cube][7]
+         -- imageSides[4] = blockInfos[cube][8]
+         -- imageSides[5] = blockInfos[cube][9]
+         -- imageSides[6] = blockInfos[cube][10]
+
           -- XX YY ZZ
           -- +- +- +-
-          if cube == 0 then
+          if cube == 1 then
             -- air
-          elseif cube == 1 then  
+          elseif cube == 2 then  
             --dirt
+            render = true
+            meshToUse = cubeMesh
+            renderAsSides = true
+          elseif cube == 3 then 
+            --grass
             render = true
             meshToUse = cubeMesh
             renderAsSides = true
@@ -216,7 +257,7 @@ function chunkMeshGenerator(X,Y)
             -- +- +- +-    
             if localXi + 1 <= chunkSettings.width then
               local cubeXPos = ChunkTable[localXi+1][localZi][localYi] 
-              if cubeXPos == 0 then
+              if cubeXPos == 1 then
                 sidesToRender[1] = true
               end
             else
@@ -225,7 +266,7 @@ function chunkMeshGenerator(X,Y)
                 
             if localXi - 1 >= 0 then
               local cubeXNeg = ChunkTable[localXi-1][localZi][localYi] 
-              if cubeXNeg == 0 then
+              if cubeXNeg == 1 then
                 sidesToRender[2] = true
               end
             else
@@ -234,7 +275,7 @@ function chunkMeshGenerator(X,Y)
                 
             if localYi + 1 <= chunkSettings.maxHeight then
               local cubeYPos = ChunkTable[localXi][localZi][localYi+1] 
-              if cubeYPos == 0 then
+              if cubeYPos == 1 then
                 sidesToRender[3] = true
               end
             else
@@ -243,7 +284,7 @@ function chunkMeshGenerator(X,Y)
                   
             if localYi - 1 >= 0 then
               local cubeYNeg = ChunkTable[localXi][localZi][localYi-1] 
-              if cubeYNeg == 0 then
+              if cubeYNeg == 1 then
                 sidesToRender[4] = true
               end
             else
@@ -252,7 +293,7 @@ function chunkMeshGenerator(X,Y)
                   
             if localZi + 1 <= chunkSettings.depth then
               local cubeZPos = ChunkTable[localXi][localZi+1][localYi] 
-              if cubeZPos == 0 then
+              if cubeZPos == 1 then
                 sidesToRender[5] = true
               end
             else
@@ -261,7 +302,7 @@ function chunkMeshGenerator(X,Y)
                   
             if localZi - 1 >= 0 then
               local cubeZNeg = ChunkTable[localXi][localZi-1][localYi] 
-              if cubeZNeg == 0 then
+              if cubeZNeg == 1 then
                 sidesToRender[6] = true
               end
             else
@@ -275,6 +316,19 @@ function chunkMeshGenerator(X,Y)
               --normalTable
               --textureCoordTable
               
+              local image = imageSides[6] -- copy sidestorender number
+              local imageXDivider = 1/bigImageSize.x
+              local imageYDivider = 1/bigImageSize.y
+              local imageXCoord = images[image][3]
+              local imageYCoord = images[image][4]
+              
+              local imageStartNumberX = (imageXDivider) * (imageXCoord + 0) -- replaces 0 for x coord
+              local imageStartNumberY = (imageYDivider) * (imageYCoord + 0) -- replaces 0 for y coord
+
+              local imageEndNumberX = (imageXDivider) * (imageXCoord + 1)  -- replaces 1 for x coord
+              local imageEndNumberY = (imageYDivider) * (imageYCoord + 1) -- replaces 1 for y coord
+
+              
               --triangleCount = triangleCount + 2
               
               vertexTable[(triangleCount*9) + 0] = 0 + (localXi)
@@ -283,8 +337,8 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 0] = 0
               normalTable[(triangleCount*9) + 1] = 1
               normalTable[(triangleCount*9) + 2] = 0
-              textureCoordTable[(triangleCount*6) + 0] = 1
-              textureCoordTable[(triangleCount*6) + 1] = 1
+              textureCoordTable[(triangleCount*6) + 0] = imageEndNumberX
+              textureCoordTable[(triangleCount*6) + 1] = imageEndNumberY
           
               -- Vertex at (1, 0, 1)
               vertexTable[(triangleCount*9) + 3] = 1 + (localXi)
@@ -293,8 +347,8 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 3] = 0
               normalTable[(triangleCount*9) + 4] = 1
               normalTable[(triangleCount*9) + 5] = 0
-              textureCoordTable[(triangleCount*6) + 2] = 0
-              textureCoordTable[(triangleCount*6) + 3] = 0
+              textureCoordTable[(triangleCount*6) + 2] = imageStartNumberX
+              textureCoordTable[(triangleCount*6) + 3] = imageStartNumberY
           
               -- Vertex at (1, 0, 0)
               vertexTable[(triangleCount*9) + 6] = 1 + (localXi)
@@ -303,8 +357,8 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 6] = 0
               normalTable[(triangleCount*9) + 7] = 1
               normalTable[(triangleCount*9) + 8] = 0
-              textureCoordTable[(triangleCount*6) + 4] = 0
-              textureCoordTable[(triangleCount*6) + 5] = 1
+              textureCoordTable[(triangleCount*6) + 4] = imageStartNumberX
+              textureCoordTable[(triangleCount*6) + 5] = imageEndNumberY
               
               triangleCount = triangleCount + 1    
               --Tri2
@@ -315,8 +369,8 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 0] = 0
               normalTable[(triangleCount*9) + 1] = 1
               normalTable[(triangleCount*9) + 2] = 0
-              textureCoordTable[(triangleCount*6) + 0] = 0
-              textureCoordTable[(triangleCount*6) + 1] = 0
+              textureCoordTable[(triangleCount*6) + 0] = imageStartNumberX
+              textureCoordTable[(triangleCount*6) + 1] = imageStartNumberY
           
               -- Vertex at (0, 0, 0)
               vertexTable[(triangleCount*9) + 3] = 0 + (localXi)
@@ -325,8 +379,8 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 3] = 0
               normalTable[(triangleCount*9) + 4] = 1
               normalTable[(triangleCount*9) + 5] = 0
-              textureCoordTable[(triangleCount*6) + 2] = 1
-              textureCoordTable[(triangleCount*6) + 3] = 1
+              textureCoordTable[(triangleCount*6) + 2] = imageEndNumberX
+              textureCoordTable[(triangleCount*6) + 3] = imageEndNumberY
           
               -- Vertex at (0, 0, 1) 
               vertexTable[(triangleCount*9) + 6] = 0 + (localXi)
@@ -335,8 +389,8 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 6] = 0
               normalTable[(triangleCount*9) + 7] = 1
               normalTable[(triangleCount*9) + 8] = 0
-              textureCoordTable[(triangleCount*6) + 4] = 1
-              textureCoordTable[(triangleCount*6) + 5] = 0
+              textureCoordTable[(triangleCount*6) + 4] = imageEndNumberX
+              textureCoordTable[(triangleCount*6) + 5] = imageStartNumberY
               
               
               triangleCount = triangleCount + 1 
@@ -349,6 +403,19 @@ function chunkMeshGenerator(X,Y)
               --normalTable
               --textureCoordTable
               
+              local image = imageSides[5] -- copy sidestorender number
+              local imageXDivider = 1/bigImageSize.x
+              local imageYDivider = 1/bigImageSize.y
+              local imageXCoord = images[image][3]
+              local imageYCoord = images[image][4]
+              
+              local imageStartNumberX = (imageXDivider) * (imageXCoord + 0) -- replaces 0 for x coord
+              local imageStartNumberY = (imageYDivider) * (imageYCoord + 0) -- replaces 0 for y coord
+
+              local imageEndNumberX = (imageXDivider) * (imageXCoord + 1)  -- replaces 1 for x coord
+              local imageEndNumberY = (imageYDivider) * (imageYCoord + 1) -- replaces 1 for y coord
+
+              
               --triangleCount = triangleCount + 2      
               
               vertexTable[(triangleCount*9) + 0] = 1 + (localXi)
@@ -357,8 +424,8 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 0] = 0
               normalTable[(triangleCount*9) + 1] = 1
               normalTable[(triangleCount*9) + 2] = 0
-              textureCoordTable[(triangleCount*6) + 0] = 1
-              textureCoordTable[(triangleCount*6) + 1] = 0
+              textureCoordTable[(triangleCount*6) + 0] = imageEndNumberX
+              textureCoordTable[(triangleCount*6) + 1] = imageStartNumberY
           
               -- Vertex at (1, 0, 1)
               vertexTable[(triangleCount*9) + 3] = 0 + (localXi)
@@ -367,8 +434,8 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 3] = 0
               normalTable[(triangleCount*9) + 4] = 1
               normalTable[(triangleCount*9) + 5] = 0
-              textureCoordTable[(triangleCount*6) + 2] = 0
-              textureCoordTable[(triangleCount*6) + 3] = 1
+              textureCoordTable[(triangleCount*6) + 2] = imageStartNumberX
+              textureCoordTable[(triangleCount*6) + 3] = imageEndNumberY
           
               -- Vertex at (1, 0, 0)
               vertexTable[(triangleCount*9) + 6] = 1 + (localXi)
@@ -377,8 +444,8 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 6] = 0
               normalTable[(triangleCount*9) + 7] = 1
               normalTable[(triangleCount*9) + 8] = 0
-              textureCoordTable[(triangleCount*6) + 4] = 1
-              textureCoordTable[(triangleCount*6) + 5] = 1 
+              textureCoordTable[(triangleCount*6) + 4] = imageEndNumberX
+              textureCoordTable[(triangleCount*6) + 5] = imageEndNumberY
               
               triangleCount = triangleCount + 1    
               --Tri2
@@ -389,8 +456,8 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 0] = 0
               normalTable[(triangleCount*9) + 1] = 1
               normalTable[(triangleCount*9) + 2] = 0
-              textureCoordTable[(triangleCount*6) + 0] = 0
-              textureCoordTable[(triangleCount*6) + 1] = 1
+              textureCoordTable[(triangleCount*6) + 0] = imageStartNumberX
+              textureCoordTable[(triangleCount*6) + 1] = imageEndNumberY
           
               -- Vertex at (0, 0, 0)
               vertexTable[(triangleCount*9) + 3] = 1 + (localXi)
@@ -399,8 +466,8 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 3] = 0
               normalTable[(triangleCount*9) + 4] = 1
               normalTable[(triangleCount*9) + 5] = 0
-              textureCoordTable[(triangleCount*6) + 2] = 1
-              textureCoordTable[(triangleCount*6) + 3] = 0
+              textureCoordTable[(triangleCount*6) + 2] = imageEndNumberX
+              textureCoordTable[(triangleCount*6) + 3] = imageStartNumberY
           
               -- Vertex at (0, 0, 1)
               vertexTable[(triangleCount*9) + 6] = 0 + (localXi)
@@ -409,8 +476,8 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 6] = 0
               normalTable[(triangleCount*9) + 7] = 1
               normalTable[(triangleCount*9) + 8] = 0
-              textureCoordTable[(triangleCount*6) + 4] = 0
-              textureCoordTable[(triangleCount*6) + 5] = 0
+              textureCoordTable[(triangleCount*6) + 4] = imageStartNumberX
+              textureCoordTable[(triangleCount*6) + 5] = imageStartNumberY
               
               
               triangleCount = triangleCount + 1 
@@ -429,14 +496,27 @@ function chunkMeshGenerator(X,Y)
              -- localXi = 0
              -- localZi = 0
               
+              local image = imageSides[3] -- copy sidestorender number
+              local imageXDivider = 1/bigImageSize.x
+              local imageYDivider = 1/bigImageSize.y
+              local imageXCoord = images[image][3]
+              local imageYCoord = images[image][4]
+              
+              local imageStartNumberX = (imageXDivider) * (imageXCoord + 0) -- replaces 0 for x coord
+              local imageStartNumberY = (imageYDivider) * (imageYCoord + 0) -- replaces 0 for y coord
+
+              local imageEndNumberX = (imageXDivider) * (imageXCoord + 1)  -- replaces 1 for x coord
+              local imageEndNumberY = (imageYDivider) * (imageYCoord + 1) -- replaces 1 for y coord
+
+
               vertexTable[(triangleCount*9) + 0] = 0 + (localXi)
               vertexTable[(triangleCount*9) + 1] = 0 + (localYi)
               vertexTable[(triangleCount*9) + 2] = 0 + (localZi)
               normalTable[(triangleCount*9) + 0] = 0
               normalTable[(triangleCount*9) + 1] = 1
               normalTable[(triangleCount*9) + 2] = 0
-              textureCoordTable[(triangleCount*6) + 0] = 0
-              textureCoordTable[(triangleCount*6) + 1] = 0
+              textureCoordTable[(triangleCount*6) + 0] = imageStartNumberX
+              textureCoordTable[(triangleCount*6) + 1] = imageStartNumberY
           
               -- Vertex at (1, 0, 1)
               vertexTable[(triangleCount*9) + 3] = 1 + (localXi)
@@ -445,8 +525,8 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 3] = 0
               normalTable[(triangleCount*9) + 4] = 1
               normalTable[(triangleCount*9) + 5] = 0
-              textureCoordTable[(triangleCount*6) + 2] = 1
-              textureCoordTable[(triangleCount*6) + 3] = 1
+              textureCoordTable[(triangleCount*6) + 2] = imageEndNumberX
+              textureCoordTable[(triangleCount*6) + 3] = imageEndNumberY
           
               -- Vertex at (1, 0, 0)
               vertexTable[(triangleCount*9) + 6] = 1 + (localXi)
@@ -455,8 +535,8 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 6] = 0
               normalTable[(triangleCount*9) + 7] = 1
               normalTable[(triangleCount*9) + 8] = 0
-              textureCoordTable[(triangleCount*6) + 4] = 1
-              textureCoordTable[(triangleCount*6) + 5] = 0 
+              textureCoordTable[(triangleCount*6) + 4] = imageEndNumberX
+              textureCoordTable[(triangleCount*6) + 5] = imageStartNumberY 
               
               triangleCount = triangleCount + 1    
               --Tri2
@@ -467,8 +547,8 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 0] = 0
               normalTable[(triangleCount*9) + 1] = 1
               normalTable[(triangleCount*9) + 2] = 0
-              textureCoordTable[(triangleCount*6) + 0] = 1
-              textureCoordTable[(triangleCount*6) + 1] = 1
+              textureCoordTable[(triangleCount*6) + 0] = imageEndNumberX
+              textureCoordTable[(triangleCount*6) + 1] = imageEndNumberY
           
               -- Vertex at (0, 0, 0)
               vertexTable[(triangleCount*9) + 3] = 0 + (localXi)
@@ -477,8 +557,8 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 3] = 0
               normalTable[(triangleCount*9) + 4] = 1
               normalTable[(triangleCount*9) + 5] = 0
-              textureCoordTable[(triangleCount*6) + 2] = 0
-              textureCoordTable[(triangleCount*6) + 3] = 0
+              textureCoordTable[(triangleCount*6) + 2] = imageStartNumberX
+              textureCoordTable[(triangleCount*6) + 3] = imageStartNumberY
           
               -- Vertex at (0, 0, 1)
               vertexTable[(triangleCount*9) + 6] = 0 + (localXi)
@@ -487,8 +567,8 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 6] = 0
               normalTable[(triangleCount*9) + 7] = 1
               normalTable[(triangleCount*9) + 8] = 0
-              textureCoordTable[(triangleCount*6) + 4] = 0
-              textureCoordTable[(triangleCount*6) + 5] = 1
+              textureCoordTable[(triangleCount*6) + 4] = imageStartNumberX
+              textureCoordTable[(triangleCount*6) + 5] = imageEndNumberY
               
               
               triangleCount = triangleCount + 1    
@@ -499,6 +579,19 @@ function chunkMeshGenerator(X,Y)
               --vertexTable
               --normalTable
               --textureCoordTable
+              
+              local image = imageSides[4] -- copy sidestorender number
+              local imageXDivider = 1/bigImageSize.x
+              local imageYDivider = 1/bigImageSize.y
+              local imageXCoord = images[image][3]
+              local imageYCoord = images[image][4]
+              
+              local imageStartNumberX = (imageXDivider) * (imageXCoord + 0) -- replaces 0 for x coord
+              local imageStartNumberY = (imageYDivider) * (imageYCoord + 0) -- replaces 0 for y coord
+
+              local imageEndNumberX = (imageXDivider) * (imageXCoord + 1)  -- replaces 1 for x coord
+              local imageEndNumberY = (imageYDivider) * (imageYCoord + 1) -- replaces 1 for y coord
+
               
                --Tri1
               -- Vertex at (0, 0, 0)
@@ -511,8 +604,8 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 0] = 0
               normalTable[(triangleCount*9) + 1] = 1
               normalTable[(triangleCount*9) + 2] = 0
-              textureCoordTable[(triangleCount*6) + 0] = 0
-              textureCoordTable[(triangleCount*6) + 1] = 0
+              textureCoordTable[(triangleCount*6) + 0] = imageStartNumberX
+              textureCoordTable[(triangleCount*6) + 1] = imageStartNumberY
           
               -- Vertex at (1, 0, 1)
               vertexTable[(triangleCount*9) + 3] = 0 + (localXi)
@@ -521,8 +614,8 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 3] = 0
               normalTable[(triangleCount*9) + 4] = 1
               normalTable[(triangleCount*9) + 5] = 0
-              textureCoordTable[(triangleCount*6) + 2] = 1
-              textureCoordTable[(triangleCount*6) + 3] = 1
+              textureCoordTable[(triangleCount*6) + 2] = imageEndNumberX
+              textureCoordTable[(triangleCount*6) + 3] = imageEndNumberY
           
               -- Vertex at (1, 0, 0)
               vertexTable[(triangleCount*9) + 6] = 1 + (localXi)
@@ -531,8 +624,8 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 6] = 0
               normalTable[(triangleCount*9) + 7] = 1
               normalTable[(triangleCount*9) + 8] = 0
-              textureCoordTable[(triangleCount*6) + 4] = 1
-              textureCoordTable[(triangleCount*6) + 5] = 0 
+              textureCoordTable[(triangleCount*6) + 4] = imageEndNumberX
+              textureCoordTable[(triangleCount*6) + 5] = imageStartNumberY
               
               triangleCount = triangleCount + 1    
               --Tri2
@@ -543,8 +636,8 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 0] = 0
               normalTable[(triangleCount*9) + 1] = 1
               normalTable[(triangleCount*9) + 2] = 0
-              textureCoordTable[(triangleCount*6) + 0] = 1
-              textureCoordTable[(triangleCount*6) + 1] = 1
+              textureCoordTable[(triangleCount*6) + 0] = imageEndNumberX
+              textureCoordTable[(triangleCount*6) + 1] = imageEndNumberY
           
               -- Vertex at (0, 0, 0)
               vertexTable[(triangleCount*9) + 3] = 1 + (localXi)
@@ -553,8 +646,8 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 3] = 0
               normalTable[(triangleCount*9) + 4] = 1
               normalTable[(triangleCount*9) + 5] = 0
-              textureCoordTable[(triangleCount*6) + 2] = 0
-              textureCoordTable[(triangleCount*6) + 3] = 0
+              textureCoordTable[(triangleCount*6) + 2] = imageStartNumberX
+              textureCoordTable[(triangleCount*6) + 3] = imageStartNumberY
           
               -- Vertex at (0, 0, 1)
               vertexTable[(triangleCount*9) + 6] = 0 + (localXi)
@@ -563,8 +656,8 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 6] = 0
               normalTable[(triangleCount*9) + 7] = 1
               normalTable[(triangleCount*9) + 8] = 0
-              textureCoordTable[(triangleCount*6) + 4] = 0
-              textureCoordTable[(triangleCount*6) + 5] = 1
+              textureCoordTable[(triangleCount*6) + 4] = imageStartNumberX
+              textureCoordTable[(triangleCount*6) + 5] = imageEndNumberY
               
               
               triangleCount = triangleCount + 1    
@@ -576,6 +669,19 @@ function chunkMeshGenerator(X,Y)
               --vertexTable
               --normalTable
               --textureCoordTable
+              
+              local image = imageSides[2] -- copy sidestorender number
+              local imageXDivider = 1/bigImageSize.x
+              local imageYDivider = 1/bigImageSize.y
+              local imageXCoord = images[image][3]
+              local imageYCoord = images[image][4]
+              
+              local imageStartNumberX = (imageXDivider) * (imageXCoord + 0) -- replaces 0 for x coord
+              local imageStartNumberY = (imageYDivider) * (imageYCoord + 0) -- replaces 0 for y coord
+
+              local imageEndNumberX = (imageXDivider) * (imageXCoord + 1)  -- replaces 1 for x coord
+              local imageEndNumberY = (imageYDivider) * (imageYCoord + 1) -- replaces 1 for y coord
+
               
               --triangleCount = triangleCount + 2 
               
@@ -590,8 +696,8 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 0] = 0
               normalTable[(triangleCount*9) + 1] = 1
               normalTable[(triangleCount*9) + 2] = 0
-              textureCoordTable[(triangleCount*6) + 0] = 0
-              textureCoordTable[(triangleCount*6) + 1] = 1
+              textureCoordTable[(triangleCount*6) + 0] = imageStartNumberX
+              textureCoordTable[(triangleCount*6) + 1] = imageEndNumberY
           
               -- Vertex at (1, 0, 1)
               vertexTable[(triangleCount*9) + 3] = 0 + (localXi)
@@ -600,8 +706,8 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 3] = 0
               normalTable[(triangleCount*9) + 4] = 1
               normalTable[(triangleCount*9) + 5] = 0
-              textureCoordTable[(triangleCount*6) + 2] = 1
-              textureCoordTable[(triangleCount*6) + 3] = 0
+              textureCoordTable[(triangleCount*6) + 2] = imageEndNumberX
+              textureCoordTable[(triangleCount*6) + 3] = imageStartNumberY
           
               -- Vertex at (1, 0, 0)
               vertexTable[(triangleCount*9) + 6] = 0 + (localXi)
@@ -610,8 +716,8 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 6] = 0
               normalTable[(triangleCount*9) + 7] = 1
               normalTable[(triangleCount*9) + 8] = 0
-              textureCoordTable[(triangleCount*6) + 4] = 0
-              textureCoordTable[(triangleCount*6) + 5] = 0 
+              textureCoordTable[(triangleCount*6) + 4] = imageStartNumberX
+              textureCoordTable[(triangleCount*6) + 5] = imageStartNumberY 
               
               triangleCount = triangleCount + 1    
               --Tri2
@@ -622,8 +728,8 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 0] = 0
               normalTable[(triangleCount*9) + 1] = 1
               normalTable[(triangleCount*9) + 2] = 0
-              textureCoordTable[(triangleCount*6) + 0] = 1
-              textureCoordTable[(triangleCount*6) + 1] = 0
+              textureCoordTable[(triangleCount*6) + 0] = imageEndNumberX
+              textureCoordTable[(triangleCount*6) + 1] = imageStartNumberY
           
               -- Vertex at (0, 0, 0)
               vertexTable[(triangleCount*9) + 3] = 0 + (localXi)
@@ -632,8 +738,8 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 3] = 0
               normalTable[(triangleCount*9) + 4] = 1
               normalTable[(triangleCount*9) + 5] = 0
-              textureCoordTable[(triangleCount*6) + 2] = 0
-              textureCoordTable[(triangleCount*6) + 3] = 1
+              textureCoordTable[(triangleCount*6) + 2] = imageStartNumberX
+              textureCoordTable[(triangleCount*6) + 3] = imageEndNumberY
           
               -- Vertex at (0, 0, 1)
               vertexTable[(triangleCount*9) + 6] = 0 + (localXi)
@@ -642,8 +748,8 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 6] = 0
               normalTable[(triangleCount*9) + 7] = 1
               normalTable[(triangleCount*9) + 8] = 0
-              textureCoordTable[(triangleCount*6) + 4] = 1
-              textureCoordTable[(triangleCount*6) + 5] = 1
+              textureCoordTable[(triangleCount*6) + 4] = imageEndNumberX
+              textureCoordTable[(triangleCount*6) + 5] = imageEndNumberY
               
               
               triangleCount = triangleCount + 1    
@@ -654,6 +760,19 @@ function chunkMeshGenerator(X,Y)
               --vertexTable
               --normalTable
               --textureCoordTable
+              
+              local image = imageSides[1] -- copy sidestorender number
+              local imageXDivider = 1/bigImageSize.x
+              local imageYDivider = 1/bigImageSize.y
+              local imageXCoord = images[image][3]
+              local imageYCoord = images[image][4]
+              
+              local imageStartNumberX = (imageXDivider) * (imageXCoord + 0) -- replaces 0 for x coord
+              local imageStartNumberY = (imageYDivider) * (imageYCoord + 0) -- replaces 0 for y coord
+
+              local imageEndNumberX = (imageXDivider) * (imageXCoord + 1)  -- replaces 1 for x coord
+              local imageEndNumberY = (imageYDivider) * (imageYCoord + 1) -- replaces 1 for y coord
+
               
                             --Tri1
               -- Vertex at (0, 0, 0)
@@ -666,8 +785,8 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 0] = 0
               normalTable[(triangleCount*9) + 1] = 1
               normalTable[(triangleCount*9) + 2] = 0
-              textureCoordTable[(triangleCount*6) + 0] = 0
-              textureCoordTable[(triangleCount*6) + 1] = 0
+              textureCoordTable[(triangleCount*6) + 0] = imageStartNumberX
+              textureCoordTable[(triangleCount*6) + 1] = imageStartNumberY
           
               -- Vertex at (1, 0, 1)
               vertexTable[(triangleCount*9) + 3] = 1 + (localXi)
@@ -676,8 +795,8 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 3] = 0
               normalTable[(triangleCount*9) + 4] = 1
               normalTable[(triangleCount*9) + 5] = 0
-              textureCoordTable[(triangleCount*6) + 2] = 1
-              textureCoordTable[(triangleCount*6) + 3] = 1
+              textureCoordTable[(triangleCount*6) + 2] = imageEndNumberX
+              textureCoordTable[(triangleCount*6) + 3] = imageEndNumberY
           
               -- Vertex at (1, 0, 0)
               vertexTable[(triangleCount*9) + 6] = 1 + (localXi)
@@ -686,8 +805,8 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 6] = 0
               normalTable[(triangleCount*9) + 7] = 1
               normalTable[(triangleCount*9) + 8] = 0
-              textureCoordTable[(triangleCount*6) + 4] = 1
-              textureCoordTable[(triangleCount*6) + 5] = 0 
+              textureCoordTable[(triangleCount*6) + 4] = imageEndNumberX
+              textureCoordTable[(triangleCount*6) + 5] = imageStartNumberY 
               
               triangleCount = triangleCount + 1    
               --Tri2
@@ -698,8 +817,8 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 0] = 0
               normalTable[(triangleCount*9) + 1] = 1
               normalTable[(triangleCount*9) + 2] = 0
-              textureCoordTable[(triangleCount*6) + 0] = 1
-              textureCoordTable[(triangleCount*6) + 1] = 1
+              textureCoordTable[(triangleCount*6) + 0] = imageEndNumberX
+              textureCoordTable[(triangleCount*6) + 1] = imageEndNumberY
           
               -- Vertex at (0, 0, 0)
               vertexTable[(triangleCount*9) + 3] = 1 + (localXi)
@@ -708,8 +827,8 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 3] = 0
               normalTable[(triangleCount*9) + 4] = 1
               normalTable[(triangleCount*9) + 5] = 0
-              textureCoordTable[(triangleCount*6) + 2] = 0
-              textureCoordTable[(triangleCount*6) + 3] = 0
+              textureCoordTable[(triangleCount*6) + 2] = imageStartNumberX
+              textureCoordTable[(triangleCount*6) + 3] = imageStartNumberY
           
               -- Vertex at (0, 0, 1)
               vertexTable[(triangleCount*9) + 6] = 1 + (localXi)
@@ -718,8 +837,8 @@ function chunkMeshGenerator(X,Y)
               normalTable[(triangleCount*9) + 6] = 0
               normalTable[(triangleCount*9) + 7] = 1
               normalTable[(triangleCount*9) + 8] = 0
-              textureCoordTable[(triangleCount*6) + 4] = 0
-              textureCoordTable[(triangleCount*6) + 5] = 1
+              textureCoordTable[(triangleCount*6) + 4] = imageStartNumberX
+              textureCoordTable[(triangleCount*6) + 5] = imageEndNumberY
               
               
               triangleCount = triangleCount + 1    
@@ -801,14 +920,14 @@ function chunkGeneration(X,Y)
       end
       for localY = 0, chunkSettings.maxHeight, 1 do
         if localY < 64 then
-          localChunk[localX][localZ][localY] = 1
+          localChunk[localX][localZ][localY] = 2
         
         else
           
-          if localY == 64 and math.random(4) == 1 then
-            localChunk[localX][localZ][localY] = 1
+          if localY == 64 and math.random(4) ~= 1 then
+            localChunk[localX][localZ][localY] = 3
           else
-            localChunk[localX][localZ][localY] = 0
+            localChunk[localX][localZ][localY] = 1
           end
         
 
@@ -846,9 +965,9 @@ function renderMapMeshes()
       local meshPosition = rl.new("Vector3",(chunkXi+1) * (chunkSettings.width+1),0,(chunkYi) * (chunkSettings.depth+1) )
 
       local matrixTransformation = rl.new("Matrix",
-        1,0,0,meshPosition.x,
-        0,1,0,meshPosition.y,
-        0,0,1,meshPosition.z,
+        1,0,0,math.floor(meshPosition.x),
+        0,1,0,math.floor(meshPosition.y),
+        0,0,1,math.floor(meshPosition.z),
         0,0,0,1)
       
       --rl.DrawModel(rl.LoadModelFromMesh(generatedMesh), meshPosition, 1, rl.new("Color",0,0,0))
