@@ -45,6 +45,19 @@ playerInfos = {
   
 }
 
+for _, player in pairs(playerInfos) do
+  player.Inventory = {}
+  player.Toolbar = {}
+  for i = 1, 9, 1 do
+    player.Toolbar[i] = {"Empty", 0, {}} -- itemName, Amount, ExtraInfo (enchantments durability etc)
+  end
+  for i = 1, 36, 1 do
+    player.Inventory[i] = {"Empty", 0, {}} -- itemName, Amount, ExtraInfo (enchantments durability etc)
+  end
+  
+end
+
+
 local PI = 3.14159265358979323846
 
 rl.InitWindow(gameSettings.WindowResolution.x, gameSettings.WindowResolution.y, gameSettings.defaultWindowTitle)
@@ -196,6 +209,14 @@ function chunkMeshGenerator(X,Y)
   local threadsMade = chunkSettings.maxHeight
   local threadsCompleted = 0
   
+  for tempX = -1, 1, 1 do -- force load chunks
+    for tempY = -1, 1, 1 do 
+      if not currentLoadedMap[X + tempX] or not currentLoadedMap[X + tempX][Y + tempY] then
+        chunkGeneration(X + tempX,Y + tempY, false)
+      end
+    end
+  end
+  
   local ChunkTable = currentLoadedMap[X][Y]
   for localXi = 0, chunkSettings.width, 1 do -- cube
     for localZi = 0, chunkSettings.depth, 1 do 
@@ -261,7 +282,13 @@ function chunkMeshGenerator(X,Y)
                 sidesToRender[1] = true
               end
             else
-              sidesToRender[1] = true
+              local cubeXPos2 = currentLoadedMap[X+1][Y][0][localZi][localYi]
+                if cubeXPos2 == 1 then
+                  sidesToRender[1] = true
+                else  
+                  sidesToRender[1] = false
+                end
+              --sidesToRender[1] = true --
             end
                 
             if localXi - 1 >= 0 then
@@ -270,7 +297,13 @@ function chunkMeshGenerator(X,Y)
                 sidesToRender[2] = true
               end
             else
-              sidesToRender[2] = true
+                local cubeXPos2 = currentLoadedMap[X-1][Y][chunkSettings.width][localZi][localYi]
+                if cubeXPos2 == 1 then
+                  sidesToRender[2] = true
+                else  
+                  sidesToRender[2] = false
+                end
+              --sidesToRender[2] = true --
             end 
                 
             if localYi + 1 <= chunkSettings.maxHeight then
@@ -297,7 +330,13 @@ function chunkMeshGenerator(X,Y)
                 sidesToRender[5] = true
               end
             else
-              sidesToRender[5] = true
+                local cubeXPos2 = currentLoadedMap[X][Y+1][localXi][0][localYi]
+                if cubeXPos2 == 1 then
+                  sidesToRender[5] = true
+                else  
+                  sidesToRender[5] = false
+                end
+              --sidesToRender[5] = true --
             end
                   
             if localZi - 1 >= 0 then
@@ -306,7 +345,14 @@ function chunkMeshGenerator(X,Y)
                 sidesToRender[6] = true
               end
             else
-              sidesToRender[6] = true
+                local cubeXPos2 = currentLoadedMap[X][Y-1][localXi][chunkSettings.depth][localYi]
+                if cubeXPos2 == 1 then
+                  sidesToRender[6] = true
+                else  
+                  sidesToRender[6] = false
+                end
+                
+              --sidesToRender[6] = true --rewrite
             end
             
             
@@ -906,7 +952,7 @@ currentLoadedMapMeshes[X][Y] = generatedMesh
 rl.UploadMesh(generatedMesh, false)
 end
 
-function chunkGeneration(X,Y)
+function chunkGeneration(X,Y, renderMesh)
   local localChunk = {}
 
   for localX = 0, chunkSettings.depth, 1 do
@@ -946,7 +992,10 @@ function chunkGeneration(X,Y)
   end
   
   currentLoadedMap[X][Y] = localChunk
-  chunkMeshGenerator(X,Y)
+  
+  if renderMesh then
+    chunkMeshGenerator(X,Y)
+  end
   
 end
 
@@ -1338,6 +1387,12 @@ function singularCubeRender()
     rl.DrawMesh(cubeMesh, defaultMaterial , matrixTransformation)
 end
 
+local uiTextures = {
+  ToolbarBox = rl.LoadTexture("Assets/ToolbarSlot.png"),
+  ToolbarBoxSelected = "",
+  
+  }
+
 function drawHUD()
   --Draw crosshair
   
@@ -1349,6 +1404,24 @@ function drawHUD()
   rl.DrawLineEx(rl.new("Vector2",centerScreenX - crosshairSize2,centerScreenY), rl.new("Vector2",centerScreenX + crosshairSize2,centerScreenY), crosshairSize, rl.WHITE)
   rl.DrawLineEx(rl.new("Vector2",centerScreenX, centerScreenY - crosshairSize2), rl.new("Vector2",centerScreenX,centerScreenY + crosshairSize2), crosshairSize, rl.WHITE)
 
+  --Toolbar
+  local toolBarOGResX = 32
+  local toolBarOGResY = 32
+  local toolbarScale = 2
+  local UIGap = 10
+  
+  local toolBarResX = toolBarOGResX * toolbarScale
+  local toolBarResY = toolBarOGResY * toolbarScale
+  
+  local toolBarXPos = (gameSettings.WindowResolution.x/2) - (toolBarResX*4.5)
+  
+  for i = 1, 9, 1 do
+    local localPlayer = playerInfos.Player1
+    --localPlayer.Toolbar[i]
+
+    rl.DrawTextureEx(uiTextures.ToolbarBox, rl.new("Vector2", toolBarXPos,gameSettings.WindowResolution.y - (toolBarResY + UIGap)), 0, toolbarScale, rl.WHITE)
+    toolBarXPos = toolBarXPos + toolBarResX
+  end
 
   --Debug Info
   local localCam = playerInfos.Player1.Camera
@@ -1448,7 +1521,7 @@ while not rl.WindowShouldClose() do
     
     local coroutineChunkGen = coroutine.create(function(cX, cY)
       if not currentLoadedMap[cX] or not currentLoadedMap[cX][cY] then
-        chunkGeneration(cX,cY)
+        chunkGeneration(cX,cY, true)
       elseif not currentLoadedMapMeshes[cX] or not currentLoadedMapMeshes[cX][cY] then
         chunkMeshGenerator(cX,cY) -- if unloaded
       end
