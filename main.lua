@@ -94,15 +94,23 @@ function createBigImage()
     end
   end
   
-  bigImage = rl.new("Texture",  xSize * imageWidth, ySize * imageHeight)
-  tempBigImage = rl.new("Image", nil, xSize * imageWidth, ySize * imageHeight)
- 
-  tempBigImage.data = nil
+  bigImage = rl.new("Texture")
+  
+  bigImage.width = xSize * imageWidth
+  bigImage.height = ySize * imageHeight  
+  
+  --tempBigImage = rl.new("Image")
+  tempBigImage = rl.GenImageColor(xSize * imageWidth, ySize * imageHeight, rl.RAYWHITE) 
+ --tempBigImage = ffi.new("Image", {})
+  --tempBigImage.data = nil
   tempBigImage.width = xSize * imageWidth
   tempBigImage.height = ySize * imageHeight
   tempBigImage.format = rl.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8
   --tempBigImage.mipmaps = 1
-
+  
+  print("here")
+  print(tempBigImage)
+  print(tempBigImage.data)
 
   
   --= ffi.new("Image[" .. (1) .. "]", {})
@@ -128,8 +136,9 @@ function createBigImage()
 end
   
   bigImage = rl.LoadTextureFromImage(tempBigImage)
-  print(bigImage)
-  print("big iamge created")
+
+  print("here2")
+  print(tempBigImage.data)
   
 end
 
