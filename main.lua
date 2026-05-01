@@ -45,6 +45,9 @@ playerInfos = {
   
 }
 
+local heldItemMeshes = {}
+local heldItemMaterials = {}
+
 for _, player in pairs(playerInfos) do
   player.Inventory = {}
   player.Toolbar = {}
@@ -189,6 +192,7 @@ blockInfos = {
 
 currentLoadedMap = {} -- children are chunks, which then has the info for individual blocks
 currentLoadedMapMeshes = {} -- children are chunks, then its a mesh for the chunk
+currentLoadedMapTransformations = {} -- children are chunks, then its the transformation for collision info
 
 --rl.SetConfigFlags(rl.FLAG_VSYNC_HINT)
 
@@ -916,14 +920,6 @@ generatedMesh.vertices = ffi.new("float[" .. (triangleCount * 3 * 3) .. "]", {})
 generatedMesh.normals = ffi.new("float[" .. (triangleCount * 3 * 3) .. "]", {})
 generatedMesh.texcoords = ffi.new("float[" .. (triangleCount * 2 * 3) .. "]", {})
 
-if not currentLoadedMapMeshes[X] then
-  currentLoadedMapMeshes[X] = {}
-end
-
-if not currentLoadedMapMeshes[X][Y] then
-  currentLoadedMapMeshes[X][Y] = {}
-end
-
 for i, vertex in pairs(vertexTable) do
   generatedMesh.vertices[i] = vertex
 end
@@ -1358,6 +1354,8 @@ end
 local mouseSensitivity = 100
 local debugText = ""
 
+local tempVar
+
 function handlePlayerInput()
   local localPlayer = playerInfos.Player1
   local mouseDelta = rl.GetMouseDelta()
@@ -1407,7 +1405,45 @@ function handlePlayerInput()
     localPlayer.SelectedSlot = 9
   end
 
-            
+  if rl.IsMouseButtonPressed(rl.MOUSE_BUTTON_LEFT) then
+    print("confirm")
+    
+    local centerScreen = rl.new("Vector2",gameSettings.WindowResolution.x/2, gameSettings.WindowResolution.y/2)
+    local ray = rl.GetMouseRay(centerScreen, localPlayer.Camera)
+    local maxRange = 10
+    local currentDistance = maxRange
+    local bestCollisionInfo 
+    
+    for chunkXi, chunkY in pairs(currentLoadedMapMeshes) do
+      for chunkYi, generatedMesh in pairs(chunkY) do
+        local meshPosition = rl.new("Vector3",(chunkXi+1) * (chunkSettings.width+1),0,(chunkYi) * (chunkSettings.depth+1) )
+
+        local matrixTransformation = rl.new("Matrix",
+          1,0,0,math.floor(meshPosition.x),
+          0,1,0,math.floor(meshPosition.y),
+          0,0,1,math.floor(meshPosition.z),
+          0,0,0,1)
+      
+        --rl.DrawMesh(generatedMesh, defaultMaterial, matrixTransformation)
+        
+      local meshHitInfo = rl.GetRayCollisionMesh(ray, generatedMesh, matrixTransformation)
+      
+      if meshHitInfo.hit and meshHitInfo.distance < currentDistance then
+        currentDistance = meshHitInfo.distance
+        bestCollisionInfo = meshHitInfo
+      end
+      
+    end
+  end
+  
+  print(currentDistance)
+  
+  tempVar = bestCollisionInfo
+  
+    --local meshHitInfo = rl.GetRayCollisionMesh(ray, tower.meshes[m], tower.transform)
+    --.hit -- .distance
+    
+  end
   
             
             
@@ -1483,6 +1519,46 @@ function drawHUD()
 
 end
 
+function renderHeldItem()
+  local localPlayer = playerInfos.Player1
+  local slotSelected = localPlayer.SelectedSlot
+  local selectedItem = localPlayer.Toolbar[slotSelected]
+
+  local selectedItemName = localPlayer.Toolbar[slotSelected][1]
+
+
+
+  if not heldItemMeshes[selectedItemName] then
+    --generate it
+    --Determine if its a block, item or empty
+    if selectedItemName == "Empty" then
+      --Hand
+      heldItemMeshes[selectedItemName] = rl.GenMeshCube(0.1,0.4,0.1)
+      
+    end
+    
+    
+  end
+    
+  if not heldItemMaterials[selectedItemName] then
+    local materialHeld = rl.LoadMaterialDefault()
+    rl.SetMaterialTexture(materialHeld, rl.MATERIAL_MAP_DIFFUSE, rl.LoadTextureFromImage(rl.GenImageColor(16,16, rl.BEIGE)) )
+    heldItemMaterials[selectedItemName] = materialHeld
+    
+
+  end
+    
+  local meshToRender = heldItemMeshes[selectedItemName]
+  local materialHeld =  heldItemMaterials[selectedItemName]
+  --local heldMatrix = rl.GetCameraMatrix(localPlayer.Camera) -- update me
+
+  
+
+  --rl.DrawMesh(meshToRender, materialHeld, heldMatrix)
+
+
+end
+
 function windowDraw()
   rl.UpdateCamera(playerInfos.Player1.Camera, rl.CAMERA_FIRST_PERSON)
 
@@ -1498,6 +1574,12 @@ function windowDraw()
   --renderMapBasic()
   
   --rl.DrawGrid(1000, 1);
+                
+  renderHeldItem()
+                
+  if tempVar then
+    rl.DrawCube(tempVar.point, 1.2, 1.2, 1.2, rl.RED);
+  end
                 
   rl.EndMode3D()
 
