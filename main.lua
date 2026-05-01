@@ -48,6 +48,7 @@ playerInfos = {
 for _, player in pairs(playerInfos) do
   player.Inventory = {}
   player.Toolbar = {}
+  player.SelectedSlot = 1
   for i = 1, 9, 1 do
     player.Toolbar[i] = {"Empty", 0, {}} -- itemName, Amount, ExtraInfo (enchantments durability etc)
   end
@@ -1358,6 +1359,7 @@ local mouseSensitivity = 100
 local debugText = ""
 
 function handlePlayerInput()
+  local localPlayer = playerInfos.Player1
   local mouseDelta = rl.GetMouseDelta()
   local newXRotation = playerInfos.Player1.Rotation.x + (mouseDelta.x * mouseSensitivity/ gameSettings.WindowResolution.x)
   local newYRotation = playerInfos.Player1.Rotation.y + (mouseDelta.y * mouseSensitivity/ gameSettings.WindowResolution.y)
@@ -1375,6 +1377,40 @@ function handlePlayerInput()
             if rl.IsKeyDown(rl.KEY_G) then
                playerInfos.Player1.Camera.position = playerInfos.Player1.Camera.position + rl.new("Vector3",0,-flyMultiplier*deltaTime,0)
             end
+            
+            
+  if rl.IsKeyDown(rl.KEY_ONE) then
+    localPlayer.SelectedSlot = 1
+  end
+  if rl.IsKeyDown(rl.KEY_TWO) then
+    localPlayer.SelectedSlot = 2
+  end
+  if rl.IsKeyDown(rl.KEY_THREE) then
+    localPlayer.SelectedSlot = 3
+  end
+  if rl.IsKeyDown(rl.KEY_FOUR) then
+    localPlayer.SelectedSlot = 4
+  end
+  if rl.IsKeyDown(rl.KEY_FIVE) then
+    localPlayer.SelectedSlot = 5
+  end
+  if rl.IsKeyDown(rl.KEY_SIX) then
+    localPlayer.SelectedSlot = 6
+  end
+  if rl.IsKeyDown(rl.KEY_SEVEN) then
+    localPlayer.SelectedSlot = 7
+  end
+  if rl.IsKeyDown(rl.KEY_EIGHT) then
+    localPlayer.SelectedSlot = 8
+  end
+  if rl.IsKeyDown(rl.KEY_NINE) then
+    localPlayer.SelectedSlot = 9
+  end
+
+            
+  
+            
+            
 end 
 
 rl.DisableCursor()
@@ -1389,7 +1425,7 @@ end
 
 local uiTextures = {
   ToolbarBox = rl.LoadTexture("Assets/ToolbarSlot.png"),
-  ToolbarBoxSelected = "",
+  ToolbarBoxSelected = rl.LoadTexture("Assets/ToolbarSlotSelected.png"),
   
   }
 
@@ -1400,11 +1436,14 @@ function drawHUD()
   local crosshairSize2 = 2
   local centerScreenX = gameSettings.WindowResolution.x / 2
   local centerScreenY = gameSettings.WindowResolution.y / 2
+  local selectionIncreasePixels = 2
 
   rl.DrawLineEx(rl.new("Vector2",centerScreenX - crosshairSize2,centerScreenY), rl.new("Vector2",centerScreenX + crosshairSize2,centerScreenY), crosshairSize, rl.WHITE)
   rl.DrawLineEx(rl.new("Vector2",centerScreenX, centerScreenY - crosshairSize2), rl.new("Vector2",centerScreenX,centerScreenY + crosshairSize2), crosshairSize, rl.WHITE)
 
   --Toolbar
+  local localPlayer = playerInfos.Player1
+
   local toolBarOGResX = 32
   local toolBarOGResY = 32
   local toolbarScale = 2
@@ -1412,16 +1451,27 @@ function drawHUD()
   
   local toolBarResX = toolBarOGResX * toolbarScale
   local toolBarResY = toolBarOGResY * toolbarScale
+  local selectionIncreasePixelsScaled = selectionIncreasePixels * toolbarScale
   
   local toolBarXPos = (gameSettings.WindowResolution.x/2) - (toolBarResX*4.5)
+  local slotUsed = localPlayer.SelectedSlot
+
+  local toolbarSelectedV2 
   
   for i = 1, 9, 1 do
-    local localPlayer = playerInfos.Player1
     --localPlayer.Toolbar[i]
-
+  
     rl.DrawTextureEx(uiTextures.ToolbarBox, rl.new("Vector2", toolBarXPos,gameSettings.WindowResolution.y - (toolBarResY + UIGap)), 0, toolbarScale, rl.WHITE)
+
+    if slotUsed == i then
+      toolbarSelectedV2 = rl.new("Vector2", toolBarXPos - selectionIncreasePixelsScaled,gameSettings.WindowResolution.y - (toolBarResY + UIGap + selectionIncreasePixelsScaled))
+    end
+
     toolBarXPos = toolBarXPos + toolBarResX
   end
+  
+   rl.DrawTextureEx(uiTextures.ToolbarBoxSelected, toolbarSelectedV2, 0, toolbarScale, rl.WHITE)
+
 
   --Debug Info
   local localCam = playerInfos.Player1.Camera
