@@ -59,6 +59,9 @@ for _, player in pairs(playerInfos) do
     player.Inventory[i] = {"Empty", 0, {}} -- itemName, Amount, ExtraInfo (enchantments durability etc)
   end
   
+  player.Toolbar[2] = {"Dirt", 64, {}}
+  player.Toolbar[3] = {"Grass", 32, {}}
+
 end
 
 
@@ -1407,9 +1410,7 @@ function handlePlayerInput()
     localPlayer.SelectedSlot = 9
   end
 
-  if rl.IsMouseButtonPressed(rl.MOUSE_BUTTON_LEFT) then
-    print("confirm")
-    
+  if rl.IsMouseButtonPressed(rl.MOUSE_BUTTON_LEFT) then    
     local centerScreen = rl.new("Vector2",gameSettings.WindowResolution.x/2, gameSettings.WindowResolution.y/2)
     local ray = rl.GetMouseRay(centerScreen, localPlayer.Camera)
     local maxRange = 10
@@ -1447,9 +1448,9 @@ function handlePlayerInput()
   
   if currentDistance ~= maxRange then
     print("Last Hit was: " .. currentDistance .. " units away.") -- use - below to go into the block
-    local localXCoord = math.floor( (bestCollisionInfo.point.x - (bestCollisionInfo.normal.x/2) ) + 0) + (chunkSettings.width/2) % chunkSettings.width
-    local localYCoord = math.floor( (bestCollisionInfo.point.y - (bestCollisionInfo.normal.y/2) ) + 0.5)
-    local localZCoord = math.floor( (bestCollisionInfo.point.z - (bestCollisionInfo.normal.z/2) ) + 0) + (chunkSettings.depth/2) % chunkSettings.depth
+    local localXCoord = (math.floor( (bestCollisionInfo.point.x - (bestCollisionInfo.normal.x/2) ) + 0) + (chunkSettings.width/2)) % chunkSettings.width
+    local localYCoord = math.floor( (bestCollisionInfo.point.y - (bestCollisionInfo.normal.y/2) ) + 1)
+    local localZCoord = (math.floor( (bestCollisionInfo.point.z - (bestCollisionInfo.normal.z/2) ) + 0) + (chunkSettings.depth/2)) % chunkSettings.depth
     
     --localXCoord = chunkSettings.width - localXCoord -- flip em
     --localZCoord = chunkSettings.depth - localXCoord
@@ -1491,7 +1492,112 @@ function handlePlayerInput()
     
   end
   
-            
+  if rl.IsMouseButtonPressed(rl.MOUSE_BUTTON_RIGHT) then    
+    local centerScreen = rl.new("Vector2",gameSettings.WindowResolution.x/2, gameSettings.WindowResolution.y/2)
+    local ray = rl.GetMouseRay(centerScreen, localPlayer.Camera)
+    local maxRange = 10
+    local currentDistance = maxRange
+    local bestCollisionInfo 
+    local chunkToEditX
+    local chunkToEditY
+
+    
+    for chunkXi, chunkY in pairs(currentLoadedMapMeshes) do
+      for chunkYi, generatedMesh in pairs(chunkY) do
+       local meshPosition = rl.new("Vector3",(chunkXi-0.5) * (chunkSettings.width+1),0,(chunkYi-0.5) * (chunkSettings.depth+1) )
+
+      local matrixTransformation = rl.new("Matrix",
+        1,0,0,math.floor(meshPosition.x + 0.5),
+        0,1,0,math.floor(meshPosition.y + 0.5),
+        0,0,1,math.floor(meshPosition.z + 0.5),
+        0,0,0,1)
+      
+        --rl.DrawMesh(generatedMesh, defaultMaterial, matrixTransformation)
+        
+      local meshHitInfo = rl.GetRayCollisionMesh(ray, generatedMesh, matrixTransformation)
+      
+      if meshHitInfo.hit and meshHitInfo.distance < currentDistance then
+        currentDistance = meshHitInfo.distance
+        bestCollisionInfo = meshHitInfo
+        chunkToEditX = chunkXi
+        chunkToEditY = chunkYi
+      end
+      
+    end
+  end
+  tempVar = bestCollisionInfo
+
+  
+  if currentDistance ~= maxRange then
+    print("Last Hit was: " .. currentDistance .. " units away.") -- use - below to go into the block
+    local localXCoord = (math.floor( (bestCollisionInfo.point.x + (bestCollisionInfo.normal.x/2) ) + 0) + (chunkSettings.width/2)) % chunkSettings.width
+    local localYCoord = math.floor( (bestCollisionInfo.point.y + (bestCollisionInfo.normal.y/2) ) + 1)
+    local localZCoord = (math.floor( (bestCollisionInfo.point.z + (bestCollisionInfo.normal.z/2) ) + 0) + (chunkSettings.depth/2)) % chunkSettings.depth
+    
+    --localXCoord = chunkSettings.width - localXCoord -- flip em
+    --localZCoord = chunkSettings.depth - localXCoord
+
+    --print(chunkToEditX)
+    --print(chunkToEditY)
+    --print(localXCoord)
+    --print(localYCoord)
+    --print(localZCoord)
+    --print("//")
+    --print(bestCollisionInfo.normal.x)
+    --print(bestCollisionInfo.normal.y)
+    --print(bestCollisionInfo.normal.z)
+
+    if not currentLoadedMap[chunkToEditX] then
+      print("BAD1")    
+    elseif not currentLoadedMap[chunkToEditX][chunkToEditY] then
+      print("BAD2")
+    elseif not currentLoadedMap[chunkToEditX][chunkToEditY][localXCoord] then
+      print("BAD3") -- apparently this triggers
+    elseif not currentLoadedMap[chunkToEditX][chunkToEditY][localXCoord][localZCoord] then
+      print("BAD4")
+    elseif not currentLoadedMap[chunkToEditX][chunkToEditY][localXCoord][localZCoord][localYCoord] then
+      print("BAD5")
+    else
+      local placedItem 
+      local placedItemNumber = 2
+      
+      local blockInfoFoundTable
+      local blockInfoFoundTablei
+
+    local localPlayer = playerInfos.Player1
+
+    local slotUsed = localPlayer.SelectedSlot
+    local currentItem = localPlayer.Toolbar[slotUsed]
+    local itemName = currentItem[1]
+    local itemAmount = currentItem[2]
+      
+
+      for i, blockInfoT in pairs(blockInfos) do
+        if blockInfoT[1] == itemName then
+          blockInfoFoundTable = blockInfoT
+          blockInfoFoundTablei = i
+        end
+      end
+      
+      placedItemNumber = blockInfoFoundTablei
+      
+      if blockInfoFoundTable then
+        currentLoadedMap[chunkToEditX][chunkToEditY][localXCoord][localZCoord][localYCoord] = placedItemNumber
+        chunkMeshGenerator(chunkToEditX,chunkToEditY)
+      end
+      
+    end
+
+
+  else
+    print("Last Hit didnt hit anything.")
+  
+  end
+  
+    --local meshHitInfo = rl.GetRayCollisionMesh(ray, tower.meshes[m], tower.transform)
+    --.hit -- .distance
+    
+  end       
             
 end 
 
@@ -1545,14 +1651,56 @@ function drawHUD()
   
     rl.DrawTextureEx(uiTextures.ToolbarBox, rl.new("Vector2", toolBarXPos,gameSettings.WindowResolution.y - (toolBarResY + UIGap)), 0, toolbarScale, rl.WHITE)
 
+    local currentItem = localPlayer.Toolbar[i]
+    local itemName = currentItem[1]
+    local itemAmount = currentItem[2]
+      
+    if currentItem[1] ~= "Empty" then
+      itemName = currentItem[1]
+      itemAmount = currentItem[2]
+      
+      local blockInfoFoundTable
+      
+      for i, blockInfoT in pairs(blockInfos) do
+        if blockInfoT[1] == itemName then
+          blockInfoFoundTable = blockInfoT
+        end
+      end
+      
+      
+      if blockInfoFoundTable then
+        --Definitely a real block, time to render in the toolbar.
+        rl.DrawTextureEx(images[blockInfoFoundTable[7]][2], rl.new("Vector2", toolBarXPos + 16,gameSettings.WindowResolution.y - (toolBarResY + UIGap) + 16), 0, toolbarScale/2, rl.WHITE)
+        
+      else
+        print("Oops! " .. itemName)
+      end
+      
+      
+    end
+    
+
     if slotUsed == i then
       toolbarSelectedV2 = rl.new("Vector2", toolBarXPos - selectionIncreasePixelsScaled,gameSettings.WindowResolution.y - (toolBarResY + UIGap + selectionIncreasePixelsScaled))
+      rl.DrawTextureEx(uiTextures.ToolbarBoxSelected, toolbarSelectedV2, 0, toolbarScale, rl.WHITE)
+
     end
 
+--           *text, posX,  posY,  fontSize, color
+  local fontSize = 20
+  local textLength = rl.MeasureText(tostring(itemAmount), fontSize)
+  local borderSize = 1 -- attempt at text border to make it easier to see
+  
+  if itemAmount ~= 0 then
+    
+    rl.DrawText( tostring(itemAmount) , toolBarXPos + toolBarResX - textLength - borderSize,gameSettings.WindowResolution.y - ( (fontSize * 1.2) + UIGap) - borderSize, fontSize + borderSize, rl.BLACK)
+    
+    --rl.DrawText( tostring(itemAmount) , toolBarXPos + toolBarResX - textLength,gameSettings.WindowResolution.y - ( (fontSize * 1.2) + UIGap), fontSize, rl.RAYWHITE)
+
+  end
     toolBarXPos = toolBarXPos + toolBarResX
   end
   
-   rl.DrawTextureEx(uiTextures.ToolbarBoxSelected, toolbarSelectedV2, 0, toolbarScale, rl.WHITE)
 
 
   --Debug Info
