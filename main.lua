@@ -3,8 +3,8 @@ local ffi = require("ffi")
 gameSettings = {
   WindowResolution = rl.new("Vector2", 1280,720),
   defaultWindowTitle = "Luacraft",
-  targetFPS = 120*10,
-  allowWorldGeneration = true, -- false only generates one chunk, at 0,0
+  targetFPS = 120*1,
+  allowWorldGeneration = false, -- false only generates one chunk, at 0,0
   renderDistance = 8,
   }
 
@@ -64,10 +64,11 @@ end
 
 local PI = 3.14159265358979323846
 
+rl.SetWindowState(rl.FLAG_MSAA_4X_HINT)
+
 rl.InitWindow(gameSettings.WindowResolution.x, gameSettings.WindowResolution.y, gameSettings.defaultWindowTitle)
 rl.UpdateCamera(playerInfos.Player1.Camera, rl.CAMERA_FIRST_PERSON)
 
-rl.SetWindowState(rl.FLAG_MSAA_4X_HINT)
 
 shapeInfos = {
     "Cube",
@@ -132,9 +133,9 @@ function createBigImage()
   tempBigImage.format = rl.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8
   --tempBigImage.mipmaps = 1
   
-  print("here")
-  print(tempBigImage)
-  print(tempBigImage.data)
+  --print("here")
+ -- print(tempBigImage)
+  --print(tempBigImage.data)
   
 
 
