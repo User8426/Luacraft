@@ -4,7 +4,7 @@ gameSettings = {
   WindowResolution = rl.new("Vector2", 1280,720),
   defaultWindowTitle = "Luacraft",
   targetFPS = 120*10,
-  allowWorldGeneration = true, -- false only generates one chunk, at 0,0
+  allowWorldGeneration = false, -- false only generates one chunk, at 0,0
   renderDistance = 8,
   }
 
@@ -1413,6 +1413,9 @@ function handlePlayerInput()
     local maxRange = 10
     local currentDistance = maxRange
     local bestCollisionInfo 
+    local chunkToEditX
+    local chunkToEditY
+
     
     for chunkXi, chunkY in pairs(currentLoadedMapMeshes) do
       for chunkYi, generatedMesh in pairs(chunkY) do
@@ -1431,14 +1434,48 @@ function handlePlayerInput()
       if meshHitInfo.hit and meshHitInfo.distance < currentDistance then
         currentDistance = meshHitInfo.distance
         bestCollisionInfo = meshHitInfo
+        chunkToEditX = chunkXi
+        chunkToEditY = chunkYi
       end
       
     end
   end
-  
-  print(currentDistance)
-  
   tempVar = bestCollisionInfo
+
+  
+  if currentDistance ~= maxRange then
+    print("Last Hit was: " .. currentDistance .. " units away.")
+    local localXCoord = math.floor( (bestCollisionInfo.point.x) + 0.5) % chunkSettings.width
+    local localYCoord = math.floor( (bestCollisionInfo.point.y) + 0.5)
+    local localZCoord = math.floor( (bestCollisionInfo.point.z) + 0.5) % chunkSettings.depth
+    
+    print(chunkToEditX)
+    print(chunkToEditY)
+    print(localXCoord)
+    print(localYCoord)
+    print(localZCoord)
+
+    if not currentLoadedMap[chunkToEditX] then
+      print("BAD1")    
+    elseif not currentLoadedMap[chunkToEditX][chunkToEditY] then
+      print("BAD2")
+    elseif not currentLoadedMap[chunkToEditX][chunkToEditY][localXCoord] then
+      print("BAD3") -- apparently this triggers
+    elseif not currentLoadedMap[chunkToEditX][chunkToEditY][localXCoord][localZCoord] then
+      print("BAD4")
+    elseif not currentLoadedMap[chunkToEditX][chunkToEditY][localXCoord][localZCoord][localYCoord] then
+      print("BAD5")
+    else
+      currentLoadedMap[chunkToEditX][chunkToEditY][localXCoord][localZCoord][localYCoord] = 1
+      chunkMeshGenerator(chunkToEditX,chunkToEditY)
+  
+    end
+
+
+  else
+    print("Last Hit didnt hit anything.")
+  
+  end
   
     --local meshHitInfo = rl.GetRayCollisionMesh(ray, tower.meshes[m], tower.transform)
     --.hit -- .distance
@@ -1578,7 +1615,7 @@ function windowDraw()
   renderHeldItem()
                 
   if tempVar then
-    rl.DrawCube(tempVar.point, 1.2, 1.2, 1.2, rl.RED);
+    --rl.DrawCube(tempVar.point, 1.2, 1.2, 1.2, rl.RED);
   end
                 
   rl.EndMode3D()
@@ -1599,7 +1636,7 @@ while not rl.WindowShouldClose() do
   
   if not gameSettings.allowWorldGeneration then
     if not currentLoadedMap[0] or not currentLoadedMap[0][0] then
-        chunkGeneration(0,0) 
+        chunkGeneration(0,0, true) 
       end  
   else 
     
