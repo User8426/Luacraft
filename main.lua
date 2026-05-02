@@ -1445,15 +1445,19 @@ function handlePlayerInput()
   
   if currentDistance ~= maxRange then
     print("Last Hit was: " .. currentDistance .. " units away.")
-    local localXCoord = math.floor( (bestCollisionInfo.point.x) + 0.5) % chunkSettings.width
-    local localYCoord = math.floor( (bestCollisionInfo.point.y) + 0.5)
-    local localZCoord = math.floor( (bestCollisionInfo.point.z) + 0.5) % chunkSettings.depth
+    local localXCoord = math.floor( (bestCollisionInfo.point.x + (bestCollisionInfo.normal.x/2) ) + 0.5) % chunkSettings.width
+    local localYCoord = math.floor( (bestCollisionInfo.point.y + (bestCollisionInfo.normal.y/2) ) + 0.5)
+    local localZCoord = math.floor( (bestCollisionInfo.point.z + (bestCollisionInfo.normal.z/2) ) + 0.5) % chunkSettings.depth
     
-    print(chunkToEditX)
-    print(chunkToEditY)
-    print(localXCoord)
-    print(localYCoord)
-    print(localZCoord)
+    --print(chunkToEditX)
+    --print(chunkToEditY)
+    --print(localXCoord)
+    --print(localYCoord)
+    --print(localZCoord)
+    --print("//")
+    --print(bestCollisionInfo.normal.x)
+    --print(bestCollisionInfo.normal.y)
+    --print(bestCollisionInfo.normal.z)
 
     if not currentLoadedMap[chunkToEditX] then
       print("BAD1")    
