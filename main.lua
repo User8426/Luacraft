@@ -211,7 +211,7 @@ function chunkMeshGenerator(X,Y)
   local vertexTable = {}
   local normalTable = {}
   local textureCoordTable = {}
-  
+
   local threadsMade = chunkSettings.maxHeight
   local threadsCompleted = 0
   
@@ -222,14 +222,14 @@ function chunkMeshGenerator(X,Y)
       end
     end
   end
-  
+
   local ChunkTable = currentLoadedMap[X][Y]
+  print("h1.5")
   for localXi = 0, chunkSettings.width, 1 do -- cube
     for localZi = 0, chunkSettings.depth, 1 do 
       --local threadYAxis = coroutine.create(function() 
         for localYi = 0, chunkSettings.maxHeight, 1 do
           local cube = ChunkTable[localXi][localZi][localYi]  
-                
           local cubePosition = rl.new("Vector3",localXi + ((chunkSettings.width + 1) * X) ,localYi,localZi + ((chunkSettings.depth + 1) * Y))
           local matrixTransformation = rl.new("Matrix",
             1,0,0,cubePosition.x,
@@ -910,6 +910,7 @@ function chunkMeshGenerator(X,Y)
  -- end
   
 -- We know triangle count now as 2 per plane
+  print("h2")
 
 local generatedMesh = rl.new("Mesh")
 generatedMesh.triangleCount = triangleCount
@@ -968,7 +969,7 @@ function chunkGeneration(X,Y, renderMesh)
         
         else
           
-          if localY == 64 and math.random(4) ~= 1 then
+          if localY == 64 and math.random(40000) ~= 1 then
             localChunk[localX][localZ][localY] = 3
           else
             localChunk[localX][localZ][localY] = 1
@@ -1410,7 +1411,7 @@ function handlePlayerInput()
     print("confirm")
     
     local centerScreen = rl.new("Vector2",gameSettings.WindowResolution.x/2, gameSettings.WindowResolution.y/2)
-    local ray = rl.GetScreenToWorldRay(centerScreen, localPlayer.Camera)
+    local ray = rl.GetMouseRay(centerScreen, localPlayer.Camera)
     local maxRange = 10
     local currentDistance = maxRange
     local bestCollisionInfo 
@@ -1446,10 +1447,13 @@ function handlePlayerInput()
   
   if currentDistance ~= maxRange then
     print("Last Hit was: " .. currentDistance .. " units away.") -- use - below to go into the block
-    local localXCoord = math.floor( (bestCollisionInfo.point.x - (bestCollisionInfo.normal.x/2) ) + 0.5) % chunkSettings.width
+    local localXCoord = math.floor( (bestCollisionInfo.point.x - (bestCollisionInfo.normal.x/2) ) + 0.5) + 2 % chunkSettings.width
     local localYCoord = math.floor( (bestCollisionInfo.point.y - (bestCollisionInfo.normal.y/2) ) + 0.5)
-    local localZCoord = math.floor( (bestCollisionInfo.point.z - (bestCollisionInfo.normal.z/2) ) + 0.5) % chunkSettings.depth
+    local localZCoord = math.floor( (bestCollisionInfo.point.z - (bestCollisionInfo.normal.z/2) ) + 0.5) + 2 % chunkSettings.depth
     
+    --localXCoord = chunkSettings.width - localXCoord -- flip em
+    --localZCoord = chunkSettings.depth - localXCoord
+
     --print(chunkToEditX)
     --print(chunkToEditY)
     --print(localXCoord)
@@ -1618,7 +1622,9 @@ function windowDraw()
   --rl.DrawGrid(1000, 1);
                 
   renderHeldItem()
-                
+          
+  --rl.DrawCube(rl.new("Vector3",-1,64,-1), 1, 1, 1, rl.RED);
+          
   if tempVar then
     --rl.DrawCube(tempVar.point, 1.2, 1.2, 1.2, rl.RED);
   end
