@@ -4,8 +4,8 @@ gameSettings = {
   WindowResolution = rl.new("Vector2", 1280,720),
   defaultWindowTitle = "Luacraft",
   targetFPS = 120*10,
-  allowWorldGeneration = false, -- false only generates one chunk, at 0,0
-  renderDistance = 8,
+  allowWorldGeneration = true, -- false only generates one chunk, at 0,0
+  renderDistance = 1,
   }
 
 chunkSettings = {
@@ -1008,12 +1008,12 @@ rl.SetMaterialTexture(defaultMaterial, rl.MATERIAL_MAP_DIFFUSE, bigImage)
 function renderMapMeshes()
   for chunkXi, chunkY in pairs(currentLoadedMapMeshes) do
     for chunkYi, generatedMesh in pairs(chunkY) do
-      local meshPosition = rl.new("Vector3",(chunkXi+1) * (chunkSettings.width+1),0,(chunkYi) * (chunkSettings.depth+1) )
+      local meshPosition = rl.new("Vector3",(chunkXi-0.5) * (chunkSettings.width+1),0,(chunkYi-0.5) * (chunkSettings.depth+1) )
 
       local matrixTransformation = rl.new("Matrix",
-        1,0,0,math.floor(meshPosition.x),
-        0,1,0,math.floor(meshPosition.y),
-        0,0,1,math.floor(meshPosition.z),
+        1,0,0,math.floor(meshPosition.x + 0.5),
+        0,1,0,math.floor(meshPosition.y + 0.5),
+        0,0,1,math.floor(meshPosition.z + 0.5),
         0,0,0,1)
       
       --rl.DrawModel(rl.LoadModelFromMesh(generatedMesh), meshPosition, 1, rl.new("Color",0,0,0))
@@ -1645,10 +1645,11 @@ while not rl.WindowShouldClose() do
   else 
     
     --renderDistance
-    local playerXChunk = math.floor( (playerInfos.Player1.Camera.position.x / chunkSettings.width) + 0.5)
-    local playerYChunk = math.floor( (playerInfos.Player1.Camera.position.z / chunkSettings.depth) + 0.5)
-
-
+    local playerXChunk = math.floor( ( (playerInfos.Player1.Camera.position.x + 0) / (chunkSettings.width + 1) ) + 0.5)
+    local playerYChunk = math.floor( ( (playerInfos.Player1.Camera.position.z + 0) / (chunkSettings.depth + 1) ) + 0.5)
+  
+    --print("Current Player Chunk: " .. playerXChunk .. "." .. playerYChunk )
+  
     local foundAChunkThisFrame = false
     local exceededRenderDistance = false
     
