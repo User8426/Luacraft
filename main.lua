@@ -224,7 +224,7 @@ function chunkMeshGenerator(X,Y)
   end
 
   local ChunkTable = currentLoadedMap[X][Y]
-  print("h1.5")
+  --print("RAYLIB 5.5 CRASHES BELOW HERE")
   for localXi = 0, chunkSettings.width, 1 do -- cube
     for localZi = 0, chunkSettings.depth, 1 do 
       --local threadYAxis = coroutine.create(function() 
@@ -910,7 +910,7 @@ function chunkMeshGenerator(X,Y)
  -- end
   
 -- We know triangle count now as 2 per plane
-  print("h2")
+  --print("RAYLIB 5.5 CRASHES ABOVE HERE")
 
 local generatedMesh = rl.new("Mesh")
 generatedMesh.triangleCount = triangleCount
@@ -1447,9 +1447,9 @@ function handlePlayerInput()
   
   if currentDistance ~= maxRange then
     print("Last Hit was: " .. currentDistance .. " units away.") -- use - below to go into the block
-    local localXCoord = math.floor( (bestCollisionInfo.point.x - (bestCollisionInfo.normal.x/2) ) + 0.5) + (chunkSettings.width/2) % chunkSettings.width
+    local localXCoord = math.floor( (bestCollisionInfo.point.x - (bestCollisionInfo.normal.x/2) ) + 0) + (chunkSettings.width/2) % chunkSettings.width
     local localYCoord = math.floor( (bestCollisionInfo.point.y - (bestCollisionInfo.normal.y/2) ) + 0.5)
-    local localZCoord = math.floor( (bestCollisionInfo.point.z - (bestCollisionInfo.normal.z/2) ) + 0.5) + (chunkSettings.depth/2) % chunkSettings.depth
+    local localZCoord = math.floor( (bestCollisionInfo.point.z - (bestCollisionInfo.normal.z/2) ) + 0) + (chunkSettings.depth/2) % chunkSettings.depth
     
     --localXCoord = chunkSettings.width - localXCoord -- flip em
     --localZCoord = chunkSettings.depth - localXCoord
