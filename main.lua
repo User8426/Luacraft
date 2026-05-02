@@ -1410,7 +1410,7 @@ function handlePlayerInput()
     print("confirm")
     
     local centerScreen = rl.new("Vector2",gameSettings.WindowResolution.x/2, gameSettings.WindowResolution.y/2)
-    local ray = rl.GetMouseRay(centerScreen, localPlayer.Camera)
+    local ray = rl.GetScreenToWorldRay(centerScreen, localPlayer.Camera)
     local maxRange = 10
     local currentDistance = maxRange
     local bestCollisionInfo 
@@ -1420,13 +1420,13 @@ function handlePlayerInput()
     
     for chunkXi, chunkY in pairs(currentLoadedMapMeshes) do
       for chunkYi, generatedMesh in pairs(chunkY) do
-        local meshPosition = rl.new("Vector3",(chunkXi+1) * (chunkSettings.width+1),0,(chunkYi) * (chunkSettings.depth+1) )
+       local meshPosition = rl.new("Vector3",(chunkXi-0.5) * (chunkSettings.width+1),0,(chunkYi-0.5) * (chunkSettings.depth+1) )
 
-        local matrixTransformation = rl.new("Matrix",
-          1,0,0,math.floor(meshPosition.x),
-          0,1,0,math.floor(meshPosition.y),
-          0,0,1,math.floor(meshPosition.z),
-          0,0,0,1)
+      local matrixTransformation = rl.new("Matrix",
+        1,0,0,math.floor(meshPosition.x + 0.5),
+        0,1,0,math.floor(meshPosition.y + 0.5),
+        0,0,1,math.floor(meshPosition.z + 0.5),
+        0,0,0,1)
       
         --rl.DrawMesh(generatedMesh, defaultMaterial, matrixTransformation)
         
