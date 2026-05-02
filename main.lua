@@ -1447,9 +1447,9 @@ function handlePlayerInput()
   
   if currentDistance ~= maxRange then
     print("Last Hit was: " .. currentDistance .. " units away.") -- use - below to go into the block
-    local localXCoord = math.floor( (bestCollisionInfo.point.x - (bestCollisionInfo.normal.x/2) ) + 0.5) + 2 % chunkSettings.width
+    local localXCoord = math.floor( (bestCollisionInfo.point.x - (bestCollisionInfo.normal.x/2) ) + 0.5) + (chunkSettings.width/2) % chunkSettings.width
     local localYCoord = math.floor( (bestCollisionInfo.point.y - (bestCollisionInfo.normal.y/2) ) + 0.5)
-    local localZCoord = math.floor( (bestCollisionInfo.point.z - (bestCollisionInfo.normal.z/2) ) + 0.5) + 2 % chunkSettings.depth
+    local localZCoord = math.floor( (bestCollisionInfo.point.z - (bestCollisionInfo.normal.z/2) ) + 0.5) + (chunkSettings.depth/2) % chunkSettings.depth
     
     --localXCoord = chunkSettings.width - localXCoord -- flip em
     --localZCoord = chunkSettings.depth - localXCoord
