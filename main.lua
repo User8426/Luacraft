@@ -5,7 +5,7 @@ gameSettings = {
   defaultWindowTitle = "Luacraft",
   targetFPS = 120*10,
   allowWorldGeneration = true, -- false only generates one chunk, at 0,0
-  renderDistance = 1,
+  renderDistance = 8,
   }
 
 chunkSettings = {
@@ -1444,10 +1444,10 @@ function handlePlayerInput()
 
   
   if currentDistance ~= maxRange then
-    print("Last Hit was: " .. currentDistance .. " units away.")
-    local localXCoord = math.floor( (bestCollisionInfo.point.x + (bestCollisionInfo.normal.x/2) ) + 0.5) % chunkSettings.width
-    local localYCoord = math.floor( (bestCollisionInfo.point.y + (bestCollisionInfo.normal.y/2) ) + 0.5)
-    local localZCoord = math.floor( (bestCollisionInfo.point.z + (bestCollisionInfo.normal.z/2) ) + 0.5) % chunkSettings.depth
+    print("Last Hit was: " .. currentDistance .. " units away.") -- use - below to go into the block
+    local localXCoord = math.floor( (bestCollisionInfo.point.x - (bestCollisionInfo.normal.x/2) ) + 0.5) % chunkSettings.width
+    local localYCoord = math.floor( (bestCollisionInfo.point.y - (bestCollisionInfo.normal.y/2) ) + 0.5)
+    local localZCoord = math.floor( (bestCollisionInfo.point.z - (bestCollisionInfo.normal.z/2) ) + 0.5) % chunkSettings.depth
     
     --print(chunkToEditX)
     --print(chunkToEditY)
@@ -1643,7 +1643,8 @@ while not rl.WindowShouldClose() do
         chunkGeneration(0,0, true) 
       end  
   else 
-    
+    local startTime = rl.GetTime()
+
     --renderDistance
     local playerXChunk = math.floor( ( (playerInfos.Player1.Camera.position.x + 0) / (chunkSettings.width + 1) ) + 0.5)
     local playerYChunk = math.floor( ( (playerInfos.Player1.Camera.position.z + 0) / (chunkSettings.depth + 1) ) + 0.5)
@@ -1667,6 +1668,7 @@ while not rl.WindowShouldClose() do
       if not currentLoadedMapMeshes[currentRenderDistanceTestValueX + playerXChunk] or not currentLoadedMapMeshes[currentRenderDistanceTestValueX + playerXChunk][currentRenderDistanceTestValueY + playerYChunk] then
         foundChunkX[foundChunks] = currentRenderDistanceTestValueX + playerXChunk
         foundChunkY[foundChunks] = currentRenderDistanceTestValueY + playerYChunk
+        foundChunks = foundChunks + 1
         --foundAChunkThisFrame = true -- replaced for coroutines
       end
       
@@ -1693,15 +1695,26 @@ while not rl.WindowShouldClose() do
       
     end
     
-    local coroutineChunkGen = coroutine.create(function(cX, cY)
+    local function generateChunkLocalFunc(cX, cY)
+      
+      if cX == nil then return end
+      if cY == nil then return end
+
       if not currentLoadedMap[cX] or not currentLoadedMap[cX][cY] then
-        chunkGeneration(cX,cY, true)
-      elseif not currentLoadedMapMeshes[cX] or not currentLoadedMapMeshes[cX][cY] then
+        chunkGeneration(cX,cY, false)
+      end
+      
+      if not currentLoadedMapMeshes[cX] or not currentLoadedMapMeshes[cX][cY] then
         chunkMeshGenerator(cX,cY) -- if unloaded
       end
+    end
+    
+    local coroutineChunkGen = coroutine.create(function(cX, cY)
+      generateChunkLocalFunc(cX, cY)
     end)
     
     for i = 0, foundChunks, 1 do
+      --generateChunkLocalFunc(foundChunkX[i], foundChunkY[i])
       coroutine.resume(coroutineChunkGen, foundChunkX[i], foundChunkY[i])
     end
     
@@ -1738,8 +1751,12 @@ while not rl.WindowShouldClose() do
     
     
     
-    
-    
+    local finalTime = rl.GetTime()
+    local takenTime = finalTime - startTime
+        
+    if foundChunks ~= 0 then
+      --print("Time taken to generate chunks: " .. takenTime)
+    end
     
   end
   
