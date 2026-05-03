@@ -61,6 +61,12 @@ for _, player in pairs(playerInfos) do
   
   player.Toolbar[2] = {"Dirt", 64, {}}
   player.Toolbar[3] = {"Grass", 32, {}}
+  player.Toolbar[4] = {"Log", 16, {}}
+  player.Toolbar[5] = {"Planks", 8, {}}
+  player.Toolbar[6] = {"Leaves", 4, {}}
+  player.Toolbar[7] = {"Bricks", 2, {}}
+  player.Toolbar[8] = {"Stone", 1, {}}
+  player.Toolbar[9] = {"Bedrock", 1, {}}
 
 end
 
@@ -85,6 +91,14 @@ images = { --Image, Texture, MegaX (DO NOT DEFINE), MegaY (DO NOT DEFINE)
     Dirt = {}, 
     GrassSide = {}, 
     GrassTop = {},
+    Log = {},
+    LogSide = {},
+    Planks = {},
+    Leaves = {},
+    Bricks = {},
+    Stone = {},
+    Bedrock = {},
+
 }
 
 for i, imageTable in pairs(images) do  
@@ -192,6 +206,13 @@ blockInfos = {
     {"Air", false, true, 0, "", "", "", "", "", ""}, -- Name, Render?, DisableFaceCulling, Shape, Up, Down, Left, Right, Forward, Back
     {"Dirt", true, false, 0, "Dirt", "Dirt", "Dirt", "Dirt", "Dirt", "Dirt"}, -- Name, Render?, DisableFaceCulling, Shape, Up, Down, Left, Right, Forward, Back
     {"Grass", true, false, 0, "GrassTop", "Dirt", "GrassSide", "GrassSide", "GrassSide", "GrassSide"}, -- Name, Render?, DisableFaceCulling, Shape, Up, Down, Left, Right, Forward, Back
+    {"Log", true, false, 0 , "Log", "Log", "LogSide", "LogSide", "LogSide", "LogSide"}, -- Name, Render?, DisableFaceCulling, Shape, Up, Down, Left, Right, Forward, Back
+    {"Planks", true, false, 0, "Planks", "Planks", "Planks", "Planks", "Planks", "Planks" }, -- Name, Render?, DisableFaceCulling, Shape, Up, Down, Left, Right, Forward, Back
+    {"Leaves", true, true, 0, "Leaves", "Leaves", "Leaves", "Leaves", "Leaves", "Leaves" }, -- Name, Render?, DisableFaceCulling, Shape, Up, Down, Left, Right, Forward, Back
+    {"Bricks", true, false, 0, "Bricks", "Bricks", "Bricks", "Bricks", "Bricks", "Bricks" }, -- Name, Render?, DisableFaceCulling, Shape, Up, Down, Left, Right, Forward, Back
+    {"Stone", true, false, 0, "Stone", "Stone", "Stone", "Stone", "Stone", "Stone"}, -- Name, Render?, DisableFaceCulling, Shape, Up, Down, Left, Right, Forward, Back
+    {"Bedrock", true, false, 0, "Bedrock", "Bedrock", "Bedrock", "Bedrock", "Bedrock", "Bedrock"}, -- Name, Render?, DisableFaceCulling, Shape, Up, Down, Left, Right, Forward, Back
+
 }
 
 currentLoadedMap = {} -- children are chunks, which then has the info for individual blocks
@@ -263,22 +284,32 @@ function chunkMeshGenerator(X,Y)
 
           -- XX YY ZZ
           -- +- +- +-
-          if cube == 1 then
+          
+        local localblockInfo = blockInfos[cube]  
+        if localblockInfo[2] then
+          render = true
+        end
+        if localblockInfo[4] then
+          renderAsSides = true
+          meshToUse = cubeMesh
+        end
+          
+    --      if cube == 1 then
             -- air
-          elseif cube == 2 then  
+   --       elseif cube == 2 then  
             --dirt
-            render = true
-            meshToUse = cubeMesh
-            renderAsSides = true
-          elseif cube == 3 then 
-            --grass
-            render = true
-            meshToUse = cubeMesh
-            renderAsSides = true
-          else
+   --         render = true
+   --         meshToUse = cubeMesh
+   --         renderAsSides = true
+   --       elseif cube == 3 then 
+   --         --grass
+   --         render = true
+   --         meshToUse = cubeMesh
+   --         renderAsSides = true
+  --        else
             --print(cube)
       
-          end
+  --        end
                 
           if render then
             --basic culling to determine if the block can be seen
@@ -967,12 +998,17 @@ function chunkGeneration(X,Y, renderMesh)
         localChunk[localX][localZ] = {}
       end
       for localY = 0, chunkSettings.maxHeight, 1 do
-        if localY < 64 then
+        
+        if localY == 0 then
+          localChunk[localX][localZ][localY] = 9
+        elseif localY < 60 then
+          localChunk[localX][localZ][localY] = 8
+        elseif localY < 64 then
           localChunk[localX][localZ][localY] = 2
         
         else
           
-          if localY == 64 and math.random(40000) ~= 1 then
+          if localY == 64 then
             localChunk[localX][localZ][localY] = 3
           else
             localChunk[localX][localZ][localY] = 1
