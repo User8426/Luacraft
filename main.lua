@@ -6,6 +6,82 @@ gameSettings = {
   targetFPS = 120*1,
   allowWorldGeneration = false, -- false only generates one chunk, at 0,0
   renderDistance = 8,
+  runSplitscreen = false,
+  localPlayerCount = 1,
+  }
+
+splitscreenWindowLocations = {
+  Count1 = {
+    Player1 = {
+      StartX = 0,
+      StartY = 0,
+      EndX = gameSettings.WindowResolution.x,
+      EndY = gameSettings.WindowResolution.y,
+      },
+    },
+  Count2 = {
+    Player1 = {
+      StartX = 0,
+      StartY = 0,
+      EndX = gameSettings.WindowResolution.x,
+      EndY = gameSettings.WindowResolution.y/2,
+      },
+      Player2 = {
+      StartX = 0,
+      StartY = gameSettings.WindowResolution.y/2,
+      EndX = gameSettings.WindowResolution.x,
+      EndY = gameSettings.WindowResolution.y,
+      },
+    },
+  Count3 = {
+    Player1 = {
+      StartX = 0,
+      StartY = 0,
+      EndX = gameSettings.WindowResolution.x,
+      EndY = gameSettings.WindowResolution.y/2,
+      },
+      Player2 = {
+      StartX = 0,
+      StartY = gameSettings.WindowResolution.y/2,
+      EndX = gameSettings.WindowResolution.x/2,
+      EndY = gameSettings.WindowResolution.y,
+      },
+      Player3 = {
+      StartX = gameSettings.WindowResolution.x/2,
+      StartY = gameSettings.WindowResolution.y/2,
+      EndX = gameSettings.WindowResolution.x,
+      EndY = gameSettings.WindowResolution.y,
+      },
+    },
+  Count4 = {
+    Player1 = {
+      StartX = 0,
+      StartY = 0,
+      EndX = gameSettings.WindowResolution.x/2,
+      EndY = gameSettings.WindowResolution.y/2,
+      },
+      Player2 = {
+      StartX = gameSettings.WindowResolution.x/2,
+      StartY = 0,
+      EndX = gameSettings.WindowResolution.x,
+      EndY = gameSettings.WindowResolution.y/2,
+      },
+      Player3 = {
+      StartX = 0,
+      StartY = gameSettings.WindowResolution.y/2,
+      EndX = gameSettings.WindowResolution.x/2,
+      EndY = gameSettings.WindowResolution.y,
+      },
+      Player4 = {
+      StartX = gameSettings.WindowResolution.x/2,
+      StartY = gameSettings.WindowResolution.y/2,
+      EndX = gameSettings.WindowResolution.x,
+      EndY = gameSettings.WindowResolution.y,
+      },
+    
+    }, 
+    
+  
   }
 
 chunkSettings = {
@@ -47,6 +123,10 @@ playerInfos = {
 
 local heldItemMeshes = {}
 local heldItemMaterials = {}
+
+playerInfos.Player2 = playerInfos.Player1
+playerInfos.Player3 = playerInfos.Player1
+playerInfos.Player4 = playerInfos.Player1
 
 for _, player in pairs(playerInfos) do
   player.Inventory = {}
@@ -1455,7 +1535,6 @@ function handlePlayerInput()
     local chunkToEditX
     local chunkToEditY
 
-    
     for chunkXi, chunkY in pairs(currentLoadedMapMeshes) do
       for chunkYi, generatedMesh in pairs(chunkY) do
        local meshPosition = rl.new("Vector3",(chunkXi-0.5) * (chunkSettings.width+1),0,(chunkYi-0.5) * (chunkSettings.depth+1) )
