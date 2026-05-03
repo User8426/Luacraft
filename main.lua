@@ -6,8 +6,8 @@ gameSettings = {
   targetFPS = 120*1,
   allowWorldGeneration = false, -- false only generates one chunk, at 0,0
   renderDistance = 8,
-  runSplitscreen = false,
-  localPlayerCount = 1,
+  runSplitscreen = true,
+  localPlayerCount = 2,
   }
 
 splitscreenWindowLocations = {
@@ -17,6 +17,8 @@ splitscreenWindowLocations = {
       StartY = 0,
       EndX = gameSettings.WindowResolution.x,
       EndY = gameSettings.WindowResolution.y,
+      Width = gameSettings.WindowResolution.x,
+      Height = gameSettings.WindowResolution.y,
       },
     },
   Count2 = {
@@ -25,12 +27,16 @@ splitscreenWindowLocations = {
       StartY = 0,
       EndX = gameSettings.WindowResolution.x,
       EndY = gameSettings.WindowResolution.y/2,
+      Width = gameSettings.WindowResolution.x,
+      Height = gameSettings.WindowResolution.y/2,
       },
       Player2 = {
       StartX = 0,
       StartY = gameSettings.WindowResolution.y/2,
       EndX = gameSettings.WindowResolution.x,
       EndY = gameSettings.WindowResolution.y,
+      Width = gameSettings.WindowResolution.x,
+      Height = gameSettings.WindowResolution.y/2,
       },
     },
   Count3 = {
@@ -39,18 +45,24 @@ splitscreenWindowLocations = {
       StartY = 0,
       EndX = gameSettings.WindowResolution.x,
       EndY = gameSettings.WindowResolution.y/2,
+      Width = gameSettings.WindowResolution.x,
+      Height = gameSettings.WindowResolution.y/2,
       },
       Player2 = {
       StartX = 0,
       StartY = gameSettings.WindowResolution.y/2,
       EndX = gameSettings.WindowResolution.x/2,
       EndY = gameSettings.WindowResolution.y,
+      Width = gameSettings.WindowResolution.x/2,
+      Height = gameSettings.WindowResolution.y/2,
       },
       Player3 = {
       StartX = gameSettings.WindowResolution.x/2,
       StartY = gameSettings.WindowResolution.y/2,
       EndX = gameSettings.WindowResolution.x,
       EndY = gameSettings.WindowResolution.y,
+      Width = gameSettings.WindowResolution.x/2,
+      Height = gameSettings.WindowResolution.y/2,
       },
     },
   Count4 = {
@@ -59,24 +71,32 @@ splitscreenWindowLocations = {
       StartY = 0,
       EndX = gameSettings.WindowResolution.x/2,
       EndY = gameSettings.WindowResolution.y/2,
+      Width = gameSettings.WindowResolution.x/2,
+      Height = gameSettings.WindowResolution.y/2,
       },
       Player2 = {
       StartX = gameSettings.WindowResolution.x/2,
       StartY = 0,
       EndX = gameSettings.WindowResolution.x,
       EndY = gameSettings.WindowResolution.y/2,
+      Width = gameSettings.WindowResolution.x/2,
+      Height = gameSettings.WindowResolution.y/2,
       },
       Player3 = {
       StartX = 0,
       StartY = gameSettings.WindowResolution.y/2,
       EndX = gameSettings.WindowResolution.x/2,
       EndY = gameSettings.WindowResolution.y,
+      Width = gameSettings.WindowResolution.x/2,
+      Height = gameSettings.WindowResolution.y/2,
       },
       Player4 = {
       StartX = gameSettings.WindowResolution.x/2,
       StartY = gameSettings.WindowResolution.y/2,
       EndX = gameSettings.WindowResolution.x,
       EndY = gameSettings.WindowResolution.y,
+      Width = gameSettings.WindowResolution.x/2,
+      Height = gameSettings.WindowResolution.y/2,
       },
     
     }, 
@@ -114,7 +134,8 @@ playerInfos = {
         MoveRight = "D",
         Rotate = "Mouse",
     },
-    
+    theRenderTexture,
+    theRenderTextureRect,
     
     }
   
@@ -128,7 +149,13 @@ playerInfos.Player2 = playerInfos.Player1
 playerInfos.Player3 = playerInfos.Player1
 playerInfos.Player4 = playerInfos.Player1
 
-for _, player in pairs(playerInfos) do
+rl.SetWindowState(rl.FLAG_MSAA_4X_HINT)
+
+rl.InitWindow(gameSettings.WindowResolution.x, gameSettings.WindowResolution.y, gameSettings.defaultWindowTitle)
+rl.UpdateCamera(playerInfos.Player1.Camera, rl.CAMERA_FIRST_PERSON)
+
+
+for playerNumber, player in pairs(playerInfos) do
   player.Inventory = {}
   player.Toolbar = {}
   player.SelectedSlot = 1
@@ -148,15 +175,20 @@ for _, player in pairs(playerInfos) do
   player.Toolbar[8] = {"Stone", 1, {}}
   player.Toolbar[9] = {"Bedrock", 1, {}}
 
+  local playerCountLocalPlayers = 1
+  if gameSettings.runSplitscreen then
+    playerCountLocalPlayers = gameSettings.localPlayerCount
+  end
+  local localResInfo = splitscreenWindowLocations["Count" .. playerCountLocalPlayers][playerNumber]
+  if localResInfo ~= nil then
+    player.theRenderTexture = rl.LoadRenderTexture(localResInfo.Width, localResInfo.Height)
+    player.theRenderTextureRect = rl.new("Rectangle", 0, 0, localResInfo.Width, -localResInfo.Height)
+  end
 end
 
 
 local PI = 3.14159265358979323846
 
-rl.SetWindowState(rl.FLAG_MSAA_4X_HINT)
-
-rl.InitWindow(gameSettings.WindowResolution.x, gameSettings.WindowResolution.y, gameSettings.defaultWindowTitle)
-rl.UpdateCamera(playerInfos.Player1.Camera, rl.CAMERA_FIRST_PERSON)
 
 
 shapeInfos = {
@@ -1869,34 +1901,64 @@ function renderHeldItem()
 end
 
 function windowDraw()
-  rl.UpdateCamera(playerInfos.Player1.Camera, rl.CAMERA_FIRST_PERSON)
+  --rl.UpdateCamera(playerInfos.Player1.Camera, rl.CAMERA_FIRST_PERSON)
 
-  rl.BeginDrawing()
+  --rl.BeginDrawing()
   rl.ClearBackground(rl.SKYBLUE)
 
   --3D
-  local localCam = playerInfos.Player1.Camera
   
-  rl.BeginMode3D(localCam)
+  local playerCountLocalPlayers = 1
+  if gameSettings.runSplitscreen then
+    playerCountLocalPlayers = gameSettings.localPlayerCount
+  end
+     
+  for i = 1, playerCountLocalPlayers, 1 do
+    rl.UpdateCamera(playerInfos["Player" .. i].Camera, rl.CAMERA_FIRST_PERSON)
+    rl.ClearBackground(rl.SKYBLUE)
+
+    local localResInfo = splitscreenWindowLocations["Count" .. playerCountLocalPlayers]["Player" .. i]
+    
+    rl.BeginTextureMode(playerInfos["Player" .. i].theRenderTexture)
+    
+    --print(playerInfos["Player" .. i].theRenderTexture)
+    
+    local localCam = playerInfos["Player" .. i].Camera
   
-  renderMapMeshes()
-  --renderMapBasic()
+    rl.BeginMode3D(localCam)
   
-  --rl.DrawGrid(1000, 1);
+    renderMapMeshes()
+    --renderMapBasic()
+  
+    --rl.DrawGrid(1000, 1);
                 
-  renderHeldItem()
+    renderHeldItem()
           
   --rl.DrawCube(rl.new("Vector3",-1,64,-1), 1, 1, 1, rl.RED);
           
-  if tempVar then
-    --rl.DrawCube(tempVar.point, 1.2, 1.2, 1.2, rl.RED);
-  end
+    if tempVar then
+      --rl.DrawCube(tempVar.point, 1.2, 1.2, 1.2, rl.RED);
+    end
                 
-  rl.EndMode3D()
+    rl.EndMode3D()
+    
+    rl.EndTextureMode()
+    
+  end
+
 
   --2D
   
-  drawHUD()
+  ------drawHUD()
+  
+  rl.BeginDrawing()
+  for i = 1, playerCountLocalPlayers, 1 do
+    --draw splitscreen players
+    local localResInfo = splitscreenWindowLocations["Count" .. playerCountLocalPlayers]["Player" .. i]
+    
+    rl.DrawTextureRec(playerInfos["Player" .. i].theRenderTexture.texture, playerInfos["Player" .. i].theRenderTextureRect, rl.new("Vector2",localResInfo.StartX, localResInfo.StartY), rl.WHITE);
+  end
+  
   
 	rl.EndDrawing()
   
