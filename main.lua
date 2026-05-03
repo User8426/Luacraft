@@ -1484,9 +1484,9 @@ function handlePlayerInput()
   
   if currentDistance ~= maxRange then
     print("Last Hit was: " .. currentDistance .. " units away.") -- use - below to go into the block
-    local localXCoord = (math.floor( (bestCollisionInfo.point.x - (bestCollisionInfo.normal.x/2) ) + 0) + (chunkSettings.width/2)) % chunkSettings.width
+    local localXCoord = (math.floor( (bestCollisionInfo.point.x - (bestCollisionInfo.normal.x/2) ) + 0) + (chunkSettings.width/2)) % (chunkSettings.width + 1 )
     local localYCoord = math.floor( (bestCollisionInfo.point.y - (bestCollisionInfo.normal.y/2) ) + 1)
-    local localZCoord = (math.floor( (bestCollisionInfo.point.z - (bestCollisionInfo.normal.z/2) ) + 0) + (chunkSettings.depth/2)) % chunkSettings.depth
+    local localZCoord = (math.floor( (bestCollisionInfo.point.z - (bestCollisionInfo.normal.z/2) ) + 0) + (chunkSettings.depth/2)) % (chunkSettings.depth + 1 )
     
     --localXCoord = chunkSettings.width - localXCoord -- flip em
     --localZCoord = chunkSettings.depth - localXCoord
@@ -1566,9 +1566,9 @@ function handlePlayerInput()
   
   if currentDistance ~= maxRange then
     print("Last Hit was: " .. currentDistance .. " units away.") -- use - below to go into the block
-    local localXCoord = (math.floor( (bestCollisionInfo.point.x + (bestCollisionInfo.normal.x/2) ) + 0) + (chunkSettings.width/2)) % chunkSettings.width
+    local localXCoord = (math.floor( (bestCollisionInfo.point.x + (bestCollisionInfo.normal.x/2) ) + 0) + (chunkSettings.width/2)) % (chunkSettings.width + 1 )
     local localYCoord = math.floor( (bestCollisionInfo.point.y + (bestCollisionInfo.normal.y/2) ) + 1)
-    local localZCoord = (math.floor( (bestCollisionInfo.point.z + (bestCollisionInfo.normal.z/2) ) + 0) + (chunkSettings.depth/2)) % chunkSettings.depth
+    local localZCoord = (math.floor( (bestCollisionInfo.point.z + (bestCollisionInfo.normal.z/2) ) + 0) + (chunkSettings.depth/2)) % (chunkSettings.width + 1 )
     
     --localXCoord = chunkSettings.width - localXCoord -- flip em
     --localZCoord = chunkSettings.depth - localXCoord
