@@ -1764,20 +1764,28 @@ local uiTextures = {
   
   }
 
-function drawHUD()
+function drawHUD(playerNumber)
   --Draw crosshair
+  
+  local playerCountLocalPlayers = 1
+  if gameSettings.runSplitscreen then
+    playerCountLocalPlayers = gameSettings.localPlayerCount
+  end
+     
+  local localResInfo = splitscreenWindowLocations["Count" .. playerCountLocalPlayers]["Player" .. playerNumber]
+    
   
   local crosshairSize = 20
   local crosshairSize2 = 2
-  local centerScreenX = gameSettings.WindowResolution.x / 2
-  local centerScreenY = gameSettings.WindowResolution.y / 2
+  local centerScreenX = localResInfo.EndX - (localResInfo.Width / 2)
+  local centerScreenY = localResInfo.EndY - (localResInfo.Height / 2)
   local selectionIncreasePixels = 2
 
   rl.DrawLineEx(rl.new("Vector2",centerScreenX - crosshairSize2,centerScreenY), rl.new("Vector2",centerScreenX + crosshairSize2,centerScreenY), crosshairSize, rl.WHITE)
   rl.DrawLineEx(rl.new("Vector2",centerScreenX, centerScreenY - crosshairSize2), rl.new("Vector2",centerScreenX,centerScreenY + crosshairSize2), crosshairSize, rl.WHITE)
 
   --Toolbar
-  local localPlayer = playerInfos.Player1
+  local localPlayer = playerInfos["Player" .. playerNumber]
 
   local toolBarOGResX = 32
   local toolBarOGResY = 32
@@ -1788,7 +1796,7 @@ function drawHUD()
   local toolBarResY = toolBarOGResY * toolbarScale
   local selectionIncreasePixelsScaled = selectionIncreasePixels * toolbarScale
   
-  local toolBarXPos = (gameSettings.WindowResolution.x/2) - (toolBarResX*4.5)
+  local toolBarXPos = (localResInfo.EndX/2) - (toolBarResX*4.5)
   local slotUsed = localPlayer.SelectedSlot
 
   local toolbarSelectedV2 
@@ -1796,7 +1804,7 @@ function drawHUD()
   for i = 1, 9, 1 do
     --localPlayer.Toolbar[i]
   
-    rl.DrawTextureEx(uiTextures.ToolbarBox, rl.new("Vector2", toolBarXPos,gameSettings.WindowResolution.y - (toolBarResY + UIGap)), 0, toolbarScale, rl.WHITE)
+    rl.DrawTextureEx(uiTextures.ToolbarBox, rl.new("Vector2", toolBarXPos,localResInfo.EndY - (toolBarResY + UIGap)), 0, toolbarScale, rl.WHITE)
 
     local currentItem = localPlayer.Toolbar[i]
     local itemName = currentItem[1]
@@ -1817,7 +1825,7 @@ function drawHUD()
       
       if blockInfoFoundTable then
         --Definitely a real block, time to render in the toolbar.
-        rl.DrawTextureEx(images[blockInfoFoundTable[7]][2], rl.new("Vector2", toolBarXPos + 16,gameSettings.WindowResolution.y - (toolBarResY + UIGap) + 16), 0, toolbarScale/2, rl.WHITE)
+        rl.DrawTextureEx(images[blockInfoFoundTable[7]][2], rl.new("Vector2", toolBarXPos + 16,localResInfo.EndY - (toolBarResY + UIGap) + 16), 0, toolbarScale/2, rl.WHITE)
         
       else
         print("Oops! " .. itemName)
@@ -1828,7 +1836,7 @@ function drawHUD()
     
 
     if slotUsed == i then
-      toolbarSelectedV2 = rl.new("Vector2", toolBarXPos - selectionIncreasePixelsScaled,gameSettings.WindowResolution.y - (toolBarResY + UIGap + selectionIncreasePixelsScaled))
+      toolbarSelectedV2 = rl.new("Vector2", toolBarXPos - selectionIncreasePixelsScaled,localResInfo.EndY - (toolBarResY + UIGap + selectionIncreasePixelsScaled))
       rl.DrawTextureEx(uiTextures.ToolbarBoxSelected, toolbarSelectedV2, 0, toolbarScale, rl.WHITE)
 
     end
@@ -1840,7 +1848,7 @@ function drawHUD()
   
   if itemAmount ~= 0 then
     
-    rl.DrawText( tostring(itemAmount) , toolBarXPos + toolBarResX - textLength - borderSize,gameSettings.WindowResolution.y - ( (fontSize * 1.2) + UIGap) - borderSize, fontSize + borderSize, rl.BLACK)
+    rl.DrawText( tostring(itemAmount) , toolBarXPos + toolBarResX - textLength - borderSize,localResInfo.EndY - ( (fontSize * 1.2) + UIGap) - borderSize, fontSize + borderSize, rl.BLACK)
     
     --rl.DrawText( tostring(itemAmount) , toolBarXPos + toolBarResX - textLength,gameSettings.WindowResolution.y - ( (fontSize * 1.2) + UIGap), fontSize, rl.RAYWHITE)
 
@@ -1854,8 +1862,8 @@ function drawHUD()
   local localCam = playerInfos.Player1.Camera
   rl.DrawFPS(0,0)
 
-  rl.DrawText("Camera Position: " .. string.format("%.2f",localCam.position.x) .. "/" .. string.format("%.2f",localCam.position.y) .. "/" .. string.format("%.2f",localCam.position.z) , 0, 20, 20, rl.BLACK)
-  rl.DrawText("Camera Target: " ..string.format("%.2f",localCam.target.x) .. "/" .. string.format("%.2f",localCam.target.y) .. "/" .. string.format("%.2f",localCam.target.z) , 0, 40, 20, rl.BLACK)
+  rl.DrawText("Camera Position: " .. string.format("%.2f",localCam.position.x) .. "/" .. string.format("%.2f",localCam.position.y) .. "/" .. string.format("%.2f",localCam.position.z) , localResInfo.StartX, localResInfo.StartY + 20, 20, rl.BLACK)
+  rl.DrawText("Camera Target: " ..string.format("%.2f",localCam.target.x) .. "/" .. string.format("%.2f",localCam.target.y) .. "/" .. string.format("%.2f",localCam.target.z) , localResInfo.StartX, localResInfo.StartY +  40, 20, rl.BLACK)
 
 
 end
@@ -1905,7 +1913,6 @@ function windowDraw()
 
   --rl.BeginDrawing()
   rl.ClearBackground(rl.SKYBLUE)
-
   --3D
   
   local playerCountLocalPlayers = 1
@@ -1919,7 +1926,7 @@ function windowDraw()
 
     local localResInfo = splitscreenWindowLocations["Count" .. playerCountLocalPlayers]["Player" .. i]
     
-    rl.BeginTextureMode(playerInfos["Player" .. i].theRenderTexture)
+    --rl.BeginTextureMode(playerInfos["Player" .. i].theRenderTexture)
     
     --print(playerInfos["Player" .. i].theRenderTexture)
     
@@ -1942,14 +1949,16 @@ function windowDraw()
                 
     rl.EndMode3D()
     
-    rl.EndTextureMode()
+    drawHUD(i)
+    
+    --rl.EndTextureMode()
     
   end
 
 
   --2D
   
-  ------drawHUD()
+  
   
   rl.BeginDrawing()
   for i = 1, playerCountLocalPlayers, 1 do
