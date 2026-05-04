@@ -6,7 +6,7 @@ gameSettings = {
   targetFPS = 120*1,
   allowWorldGeneration = false, -- false only generates one chunk, at 0,0
   renderDistance = 8,
-  runSplitscreen = true,
+  runSplitscreen = false,
   localPlayerCount = 2,
   }
 
@@ -112,6 +112,7 @@ chunkSettings = {
 
 playerInfos = {
   Player1 = {
+    Velocity = rl.new("Vector3",0,0,0),
     Camera = rl.new("Camera", {
   position = rl.new("Vector3", 0, 66, 1),
   target = rl.new("Vector3", 0, 0, 0),
@@ -1580,7 +1581,7 @@ function renderMapBasic()
 
 end
 
-local mouseSensitivity = 100
+local mouseSensitivity = 1
 local debugText = ""
 
 local tempVar
@@ -1591,19 +1592,131 @@ function handlePlayerInput()
   local newXRotation = playerInfos.Player1.Rotation.x + (mouseDelta.x * mouseSensitivity/ gameSettings.WindowResolution.x)
   local newYRotation = playerInfos.Player1.Rotation.y + (mouseDelta.y * mouseSensitivity/ gameSettings.WindowResolution.y)
 
-  --playerInfos.Player1.Rotation = rl.new("Vector2", newXRotation, newYRotation)
+  playerInfos.Player1.Rotation = rl.new("Vector2", newXRotation, newYRotation)
   --playerInfos.Player1.Camera.target = rl.new("Vector3", math.sin(newXRotation), -newYRotation, math.cos(newXRotation) )
+  
   --debugText = tostring(playerInfos.Player1.Rotation)
     local deltaTime = rl.GetFrameTime()
-    local flyMultiplier = 100
+    local walkSpeed = 4
+    local flyMultiplier = 4
+    
+  rl.CameraYaw(localPlayer.Camera, -(mouseDelta.x)*mouseSensitivity*deltaTime, false)
+  rl.CameraPitch(localPlayer.Camera, -(mouseDelta.y)*mouseSensitivity*deltaTime, true, false, false)
+
+
+    
   
-            if rl.IsKeyDown(rl.KEY_T) then
-              playerInfos.Player1.Camera.position = playerInfos.Player1.Camera.position + rl.new("Vector3",0,flyMultiplier*deltaTime,0)
-            end
+    if rl.IsKeyDown(rl.KEY_W) then -- forward
+      rl.CameraMoveForward(localPlayer.Camera, walkSpeed * deltaTime, true);
+      
+    end
+    if rl.IsKeyDown(rl.KEY_S) then -- backward
+      rl.CameraMoveForward(localPlayer.Camera, -walkSpeed * deltaTime, true);
+      
+    end    
+    if rl.IsKeyDown(rl.KEY_A) then -- left
+      rl.CameraMoveRight(localPlayer.Camera, -walkSpeed * deltaTime, true);
+      
+    end    
+    if rl.IsKeyDown(rl.KEY_D) then -- right
+      rl.CameraMoveRight(localPlayer.Camera, walkSpeed * deltaTime, true);
+      
+    end
+    local playerDistanceGround
+    local playerHeight = 2
+    
+    local ray = rl.new("Ray")
+    
+    ray.position = localPlayer.Camera.position
+    ray.direction= rl.new("Vector3",0,-1,0)
+    
+    local maxRange = 100
+    local currentDistance = maxRange
+    local bestCollisionInfo 
+
+    
+    for chunkXi, chunkY in pairs(currentLoadedMapMeshes) do
+      for chunkYi, generatedMesh in pairs(chunkY) do
+       local meshPosition = rl.new("Vector3",(chunkXi-0.5) * (chunkSettings.width+1),0,(chunkYi-0.5) * (chunkSettings.depth+1) )
+
+      local matrixTransformation = rl.new("Matrix",
+        1,0,0,math.floor(meshPosition.x + 0.5),
+        0,1,0,math.floor(meshPosition.y + 0.5),
+        0,0,1,math.floor(meshPosition.z + 0.5),
+        0,0,0,1)
+      
+        --rl.DrawMesh(generatedMesh, defaultMaterial, matrixTransformation)
+        
+      local meshHitInfo = rl.GetRayCollisionMesh(ray, generatedMesh, matrixTransformation)
+      
+      if meshHitInfo.hit and meshHitInfo.distance < currentDistance then
+        currentDistance = meshHitInfo.distance
+        bestCollisionInfo = meshHitInfo
+      end
+      
+    end
+  end
+
+  
+  if currentDistance ~= maxRange then
+    playerDistanceGround = currentDistance
+  else
+    print("Nothing below player?")
+    currentDistance = 100000
+  
+  end
+    
+    local jumpVelocity = 6
+    
+    if rl.IsKeyDown(rl.KEY_SPACE) then -- jump
+      -- check for if grounded,
+      if currentDistance >= playerHeight then
+        if localPlayer.Velocity.y == 0 then
+          localPlayer.Velocity = rl.new("Vector3", localPlayer.Velocity.x, localPlayer.Velocity.y + jumpVelocity, localPlayer.Velocity.z)
+        end
+        
+      end
+    end
+    
+    local AmountMoved = localPlayer.Velocity.y * deltaTime
+    local gravityConstant = 9.81
+    
+    -- do a check for distance, if it brings the player through the mesh then only move the maxdistance
+    local maxDistanceAllowedMove = currentDistance - playerHeight
+    
+    if AmountMoved < 0 then
+      if maxDistanceAllowedMove > AmountMoved then
+        localPlayer.Camera.position = rl.new("Vector3",localPlayer.Camera.position.x,localPlayer.Camera.position.y + AmountMoved,localPlayer.Camera.position.z)
+      else
+        localPlayer.Camera.position = rl.new("Vector3",localPlayer.Camera.position.x,localPlayer.Camera.position.y + maxDistanceAllowedMove,localPlayer.Camera.position.z)
+    end
+      
+    else 
+        localPlayer.Camera.position = rl.new("Vector3",localPlayer.Camera.position.x,localPlayer.Camera.position.y + AmountMoved,localPlayer.Camera.position.z)
+
+    end
+    
+    
+    -- check if grounded, if not gravity brings player down
+    
+    if currentDistance > playerHeight then
+      AmountMoved = localPlayer.Velocity.y  - (gravityConstant * deltaTime)
+      localPlayer.Velocity = rl.new("Vector3", localPlayer.Velocity.x, AmountMoved, localPlayer.Velocity.z)
+    else
+      localPlayer.Velocity = rl.new("Vector3", localPlayer.Velocity.x, 0, localPlayer.Velocity.z)
+      localPlayer.Camera.position = rl.new("Vector3", localPlayer.Camera.position.x, localPlayer.Camera.position.y + (playerHeight-currentDistance), localPlayer.Camera.position.z)
+    end
+    
+    
+    
+  
+           -- if rl.IsKeyDown(rl.KEY_T) then
+             -- playerInfos.Player1.Camera.position = playerInfos.Player1.Camera.position + rl.new("Vector3",0,flyMultiplier*deltaTime,0)
+           -- end
             
-            if rl.IsKeyDown(rl.KEY_G) then
-               playerInfos.Player1.Camera.position = playerInfos.Player1.Camera.position + rl.new("Vector3",0,-flyMultiplier*deltaTime,0)
-            end
+           -- if rl.IsKeyDown(rl.KEY_G) then
+              -- playerInfos.Player1.Camera.position = playerInfos.Player1.Camera.position + rl.new("Vector3",0,-flyMultiplier*deltaTime,0)
+            --end
             
             
   if rl.IsKeyDown(rl.KEY_ONE) then
@@ -1996,7 +2109,7 @@ function windowDraw()
     playerCountLocalPlayers = gameSettings.localPlayerCount
   end
   
-      rl.UpdateCamera(playerInfos["Player1"].Camera, rl.CAMERA_FIRST_PERSON)
+     -- rl.UpdateCamera(playerInfos["Player1"].Camera, rl.CAMERA_FIRST_PERSON)
 
      
   for i = 1, playerCountLocalPlayers, 1 do
