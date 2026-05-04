@@ -137,17 +137,93 @@ playerInfos = {
     theRenderTexture,
     theRenderTextureRect,
     
+    },
+  Player2 = {
+    Camera = rl.new("Camera", {
+  position = rl.new("Vector3", 0, 66, 1),
+  target = rl.new("Vector3", 0, 0, 0),
+  up = rl.new("Vector3", 0, 1, 0),
+  fovy = 45,
+  type = rl.CAMERA_PERSPECTIVE
+}),
+    Position = rl.new("Vector3", 0,0,0),
+    Rotation = rl.new("Vector3", 0,0,0),
+    CurrentInputPressed = {
+        Move = rl.new("Vector2", 0, 0),
+        Rotate = rl.new("Vector2", 0, 0),
+
+    },
+    CurrentInputDefined = {
+        Move = "",
+        MoveForward = "W",
+        MoveBackwards = "S",
+        MoveLeft = "A",
+        MoveRight = "D",
+        Rotate = "Mouse",
+    },
+    theRenderTexture,
+    theRenderTextureRect,
+    
+  },
+  Player3 = {
+    Camera = rl.new("Camera", {
+  position = rl.new("Vector3", 0, 66, 1),
+  target = rl.new("Vector3", 0, 0, 0),
+  up = rl.new("Vector3", 0, 1, 0),
+  fovy = 45,
+  type = rl.CAMERA_PERSPECTIVE
+}),
+    Position = rl.new("Vector3", 0,0,0),
+    Rotation = rl.new("Vector3", 0,0,0),
+    CurrentInputPressed = {
+        Move = rl.new("Vector2", 0, 0),
+        Rotate = rl.new("Vector2", 0, 0),
+
+    },
+    CurrentInputDefined = {
+        Move = "",
+        MoveForward = "W",
+        MoveBackwards = "S",
+        MoveLeft = "A",
+        MoveRight = "D",
+        Rotate = "Mouse",
+    },
+    theRenderTexture,
+    theRenderTextureRect,
+    
+  },
+  Player4 = {
+    Camera = rl.new("Camera", {
+  position = rl.new("Vector3", 0, 66, 1),
+  target = rl.new("Vector3", 0, 0, 0),
+  up = rl.new("Vector3", 0, 1, 0),
+  fovy = 45,
+  type = rl.CAMERA_PERSPECTIVE
+}),
+    Position = rl.new("Vector3", 0,0,0),
+    Rotation = rl.new("Vector3", 0,0,0),
+    CurrentInputPressed = {
+        Move = rl.new("Vector2", 0, 0),
+        Rotate = rl.new("Vector2", 0, 0),
+
+    },
+    CurrentInputDefined = {
+        Move = "",
+        MoveForward = "W",
+        MoveBackwards = "S",
+        MoveLeft = "A",
+        MoveRight = "D",
+        Rotate = "Mouse",
+    },
+    theRenderTexture,
+    theRenderTextureRect,
+    
     }
-  
   
 }
 
 local heldItemMeshes = {}
 local heldItemMaterials = {}
-
-playerInfos.Player2 = playerInfos.Player1
-playerInfos.Player3 = playerInfos.Player1
-playerInfos.Player4 = playerInfos.Player1
 
 rl.SetWindowState(rl.FLAG_MSAA_4X_HINT)
 
@@ -1919,15 +1995,18 @@ function windowDraw()
   if gameSettings.runSplitscreen then
     playerCountLocalPlayers = gameSettings.localPlayerCount
   end
+  
+      rl.UpdateCamera(playerInfos["Player1"].Camera, rl.CAMERA_FIRST_PERSON)
+
      
   for i = 1, playerCountLocalPlayers, 1 do
-    rl.UpdateCamera(playerInfos["Player" .. i].Camera, rl.CAMERA_FIRST_PERSON)
     rl.ClearBackground(rl.SKYBLUE)
 
     local localResInfo = splitscreenWindowLocations["Count" .. playerCountLocalPlayers]["Player" .. i]
     
-    --rl.BeginTextureMode(playerInfos["Player" .. i].theRenderTexture)
-    
+    rl.BeginTextureMode(playerInfos["Player" .. i].theRenderTexture)
+    rl.ClearBackground(rl.SKYBLUE)
+
     --print(playerInfos["Player" .. i].theRenderTexture)
     
     local localCam = playerInfos["Player" .. i].Camera
@@ -1939,26 +2018,28 @@ function windowDraw()
   
     --rl.DrawGrid(1000, 1);
                 
-    renderHeldItem()
+    --renderHeldItem()
           
   --rl.DrawCube(rl.new("Vector3",-1,64,-1), 1, 1, 1, rl.RED);
-          
+    
+    for i = 1, playerCountLocalPlayers, 1 do
+      local position = playerInfos["Player" .. i].Camera.position
+      rl.DrawCube(position, 1, 1, 1, rl.RED)
+    end
+    
+    
     if tempVar then
       --rl.DrawCube(tempVar.point, 1.2, 1.2, 1.2, rl.RED);
     end
                 
     rl.EndMode3D()
-    
-    drawHUD(i)
-    
-    --rl.EndTextureMode()
+        
+    rl.EndTextureMode()
     
   end
 
 
-  --2D
-  
-  
+  --SplitscreenViewports
   
   rl.BeginDrawing()
   for i = 1, playerCountLocalPlayers, 1 do
@@ -1968,7 +2049,11 @@ function windowDraw()
     rl.DrawTextureRec(playerInfos["Player" .. i].theRenderTexture.texture, playerInfos["Player" .. i].theRenderTextureRect, rl.new("Vector2",localResInfo.StartX, localResInfo.StartY), rl.WHITE);
   end
   
-  
+  --2D
+  for i = 1, playerCountLocalPlayers, 1 do
+    drawHUD(i)
+  end
+
 	rl.EndDrawing()
   
   
