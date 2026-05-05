@@ -6,8 +6,8 @@ gameSettings = {
   targetFPS = 120*1,
   allowWorldGeneration = false, -- false only generates one chunk, at 0,0
   renderDistance = 8,
-  runSplitscreen = false,
-  localPlayerCount = 2,
+  runSplitscreen = true,
+  localPlayerCount = 3,
   }
 
 splitscreenWindowLocations = {
@@ -1998,7 +1998,7 @@ function drawHUD(playerNumber)
   local toolBarResY = toolBarOGResY * toolbarScale
   local selectionIncreasePixelsScaled = selectionIncreasePixels * toolbarScale
   
-  local toolBarXPos = (localResInfo.EndX/2) - (toolBarResX*4.5)
+  local toolBarXPos = centerScreenX - (toolBarResX*4.5)
   local slotUsed = localPlayer.SelectedSlot
 
   local toolbarSelectedV2 
