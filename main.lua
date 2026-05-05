@@ -112,7 +112,7 @@ chunkSettings = {
 
 local viewModelCam = rl.new("Camera", {
   position = rl.new("Vector3", 0, 0, 0),
-  target = rl.new("Vector3", 0, 0, 0),
+  target = rl.new("Vector3", 1, 0, 0),
   up = rl.new("Vector3", 0, 1, 0),
   fovy = 45,
   type = rl.CAMERA_PERSPECTIVE
@@ -299,6 +299,7 @@ images = { --Image, Texture, MegaX (DO NOT DEFINE), MegaY (DO NOT DEFINE)
     Bricks = {},
     Stone = {},
     Bedrock = {},
+    Error = {},
 
 }
 
@@ -2076,6 +2077,14 @@ function renderHeldItem(playerNumber)
 
   local selectedItemName = localPlayer.Toolbar[slotSelected][1]
 
+  local itemType 
+
+  if selectedItemName == "Empty" then
+    itemType = "Tool"
+  else  
+    itemType = "Block"
+   
+  end
 
 
   if not heldItemMeshes[selectedItemName] then
@@ -2087,7 +2096,6 @@ function renderHeldItem(playerNumber)
     else -- assume block
       local viewModelBlockSize = 0.1
       heldItemMeshes[selectedItemName] = rl.GenMeshCube(viewModelBlockSize,viewModelBlockSize,viewModelBlockSize)
-    
     end
     
     
@@ -2095,7 +2103,27 @@ function renderHeldItem(playerNumber)
     
   if not heldItemMaterials[selectedItemName] then
     local materialHeld = rl.LoadMaterialDefault()
-    rl.SetMaterialTexture(materialHeld, rl.MATERIAL_MAP_DIFFUSE, rl.LoadTextureFromImage(rl.GenImageColor(16,16, rl.BEIGE)) )
+    
+    if selectedItemName == "Empty" then
+      rl.SetMaterialTexture(materialHeld, rl.MATERIAL_MAP_DIFFUSE, rl.LoadTextureFromImage(rl.GenImageColor(16,16, rl.BEIGE)) )
+    else
+      --Rewrite to get all textures working using below info
+      --local imageSides = {blockInfos[cube][10], blockInfos[cube][9], blockInfos[cube][5], blockInfos[cube][6], blockInfos[cube][8], blockInfos[cube][7]}
+      
+      local imageTexture = images[selectedItemName]
+      
+      if not imageTexture then
+        imageTexture = images["Error"][2]
+        print("Something went wrong with image rendering.")
+      else  
+        imageTexture = imageTexture[2]
+      end
+      
+      
+      rl.SetMaterialTexture(materialHeld, rl.MATERIAL_MAP_DIFFUSE, imageTexture )
+    end
+
+  
     heldItemMaterials[selectedItemName] = materialHeld
     
 
@@ -2105,19 +2133,50 @@ function renderHeldItem(playerNumber)
   local materialHeld =  heldItemMaterials[selectedItemName]
   --local heldMatrix = rl.GetCameraMatrix(localPlayer.Camera) -- update me
 
-  local localviewmodePos = rl.new("Vector3",0,0,0.5)
-
+  local localviewmodePos
   local heldMatrix = rl.new("Matrix",
+    1,0,0,0,
+    0,1,0,0,
+    0,0,1,0,
+    0,0,0,1)
+
+
+  if itemType == "Tool" then
+    local rotationMatrix1 = rl.MatrixRotateX(-PI/4)
+    heldMatrix = rl.MatrixMultiply(heldMatrix, rotationMatrix1)
+    
+    localviewmodePos = rl.new("Vector3",0.6,-0.4,0.1)
+    
+    heldMatrixTranslation = rl.new("Matrix",
     1,0,0,localviewmodePos.x,
     0,1,0,localviewmodePos.y,
     0,0,1,localviewmodePos.z,
     0,0,0,1)
+  
+    heldMatrix = rl.MatrixMultiply(heldMatrixTranslation, heldMatrix)
+
+  else
+    local rotationMatrix1 = rl.MatrixRotateX(PI/2)
+    heldMatrix = rl.MatrixMultiply(heldMatrix, rotationMatrix1)
+    
+    localviewmodePos = rl.new("Vector3",0.32,0.15,0.1)
+    
+    heldMatrixTranslation = rl.new("Matrix",
+    1,0,0,localviewmodePos.x,
+    0,1,0,localviewmodePos.y,
+    0,0,1,localviewmodePos.z,
+    0,0,0,1)
+  
+    heldMatrix = rl.MatrixMultiply(heldMatrixTranslation, heldMatrix)
+    
+  end
+
 
   --clear depth buffer and prepare to render!
-  rl.ClearBackground(rl.SKYBLUE)
   rl.BeginTextureMode(playerInfos["Player" .. playerNumber].theRenderTextureViewModel)
-
+  
   rl.BeginMode3D(viewModelCam)
+  rl.ClearBackground(rl.BLANK)
 
   rl.DrawMesh(meshToRender, materialHeld, heldMatrix)
 
