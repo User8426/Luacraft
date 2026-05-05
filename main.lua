@@ -2061,7 +2061,7 @@ function drawHUD(playerNumber)
 
 
   --Debug Info
-  local localCam = playerInfos.Player1.Camera
+  local localCam = localPlayer.Camera
   rl.DrawFPS(0,0)
 
   rl.DrawText("Camera Position: " .. string.format("%.2f",localCam.position.x) .. "/" .. string.format("%.2f",localCam.position.y) .. "/" .. string.format("%.2f",localCam.position.z) , localResInfo.StartX, localResInfo.StartY + 20, 20, rl.BLACK)
