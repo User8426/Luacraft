@@ -110,6 +110,14 @@ chunkSettings = {
     depth = 16,
 }
 
+local viewModelCam = rl.new("Camera", {
+  position = rl.new("Vector3", 0, 0, 0),
+  target = rl.new("Vector3", 0, 0, 0),
+  up = rl.new("Vector3", 0, 1, 0),
+  fovy = 45,
+  type = rl.CAMERA_PERSPECTIVE
+})
+
 playerInfos = {
   Player1 = {
     Velocity = rl.new("Vector3",0,0,0),
@@ -137,7 +145,7 @@ playerInfos = {
     },
     theRenderTexture,
     theRenderTextureRect,
-    
+    theRenderTextureViewModel,
     },
   Player2 = {
     Camera = rl.new("Camera", {
@@ -164,6 +172,7 @@ playerInfos = {
     },
     theRenderTexture,
     theRenderTextureRect,
+    theRenderTextureViewModel,
     
   },
   Player3 = {
@@ -191,6 +200,7 @@ playerInfos = {
     },
     theRenderTexture,
     theRenderTextureRect,
+    theRenderTextureViewModel,
     
   },
   Player4 = {
@@ -218,6 +228,7 @@ playerInfos = {
     },
     theRenderTexture,
     theRenderTextureRect,
+    theRenderTextureViewModel,
     
     }
   
@@ -259,6 +270,7 @@ for playerNumber, player in pairs(playerInfos) do
   local localResInfo = splitscreenWindowLocations["Count" .. playerCountLocalPlayers][playerNumber]
   if localResInfo ~= nil then
     player.theRenderTexture = rl.LoadRenderTexture(localResInfo.Width, localResInfo.Height)
+    player.theRenderTextureViewModel = rl.LoadRenderTexture(localResInfo.Width, localResInfo.Height)
     player.theRenderTextureRect = rl.new("Rectangle", 0, 0, localResInfo.Width, -localResInfo.Height)
   end
 end
@@ -2057,8 +2069,8 @@ function drawHUD(playerNumber)
 
 end
 
-function renderHeldItem()
-  local localPlayer = playerInfos.Player1
+function renderHeldItem(playerNumber)
+  local localPlayer = playerInfos["Player" .. playerNumber]
   local slotSelected = localPlayer.SelectedSlot
   local selectedItem = localPlayer.Toolbar[slotSelected]
 
@@ -2072,7 +2084,10 @@ function renderHeldItem()
     if selectedItemName == "Empty" then
       --Hand
       heldItemMeshes[selectedItemName] = rl.GenMeshCube(0.1,0.4,0.1)
-      
+    else -- assume block
+      local viewModelBlockSize = 0.1
+      heldItemMeshes[selectedItemName] = rl.GenMeshCube(viewModelBlockSize,viewModelBlockSize,viewModelBlockSize)
+    
     end
     
     
@@ -2090,9 +2105,25 @@ function renderHeldItem()
   local materialHeld =  heldItemMaterials[selectedItemName]
   --local heldMatrix = rl.GetCameraMatrix(localPlayer.Camera) -- update me
 
-  
+  local localviewmodePos = rl.new("Vector3",0,0,0.5)
 
-  --rl.DrawMesh(meshToRender, materialHeld, heldMatrix)
+  local heldMatrix = rl.new("Matrix",
+    1,0,0,localviewmodePos.x,
+    0,1,0,localviewmodePos.y,
+    0,0,1,localviewmodePos.z,
+    0,0,0,1)
+
+  --clear depth buffer and prepare to render!
+  rl.ClearBackground(rl.SKYBLUE)
+  rl.BeginTextureMode(playerInfos["Player" .. playerNumber].theRenderTextureViewModel)
+
+  rl.BeginMode3D(viewModelCam)
+
+  rl.DrawMesh(meshToRender, materialHeld, heldMatrix)
+
+  rl.EndMode3D()
+
+  rl.EndTextureMode()
 
 
 end
@@ -2161,6 +2192,15 @@ function windowDraw()
     
     rl.DrawTextureRec(playerInfos["Player" .. i].theRenderTexture.texture, playerInfos["Player" .. i].theRenderTextureRect, rl.new("Vector2",localResInfo.StartX, localResInfo.StartY), rl.WHITE);
   end
+  
+  --Now do the second 3D layer, the viewmodel.
+  for i = 1, playerCountLocalPlayers, 1 do
+    renderHeldItem(i)
+    local localResInfo = splitscreenWindowLocations["Count" .. playerCountLocalPlayers]["Player" .. i]
+    
+    rl.DrawTextureRec(playerInfos["Player" .. i].theRenderTextureViewModel.texture, playerInfos["Player" .. i].theRenderTextureRect, rl.new("Vector2",localResInfo.StartX, localResInfo.StartY), rl.WHITE);
+  end
+  
   
   --2D
   for i = 1, playerCountLocalPlayers, 1 do
