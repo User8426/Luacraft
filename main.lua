@@ -6,9 +6,11 @@ gameSettings = {
   targetFPS = 120*1,
   allowWorldGeneration = false, -- false only generates one chunk, at 0,0
   renderDistance = 8,
-  runSplitscreen = true,
+  runSplitscreen = false,
   localPlayerCount = 3,
   }
+
+local currentGameState = "MainMenu"
 
 splitscreenWindowLocations = {
   Count1 = {
@@ -278,6 +280,30 @@ end
 
 local PI = 3.14159265358979323846
 
+local function readSettings()
+  
+  
+end
+
+local function saveSettings()
+  
+  
+end
+
+local function readWorldData(worldName)
+  
+  
+end
+
+local function saveWorldData(worldName)
+  
+  
+end
+
+local function listWorldData()
+  
+  
+end
 
 
 shapeInfos = {
@@ -421,6 +447,15 @@ currentLoadedMap = {} -- children are chunks, which then has the info for indivi
 currentLoadedMapMeshes = {} -- children are chunks, then its a mesh for the chunk
 currentLoadedMapTransformations = {} -- children are chunks, then its the transformation for collision info
 
+local function findChunkInfoOptimized(X,Z,Y)
+  --replaces current 5d table with 3d, so only chunk position is needed as math can be used
+  
+  --localChunk[findChunkInfoOptimized(localX, localZ, localY)]
+  
+  return Y + (Z *(chunkSettings.maxHeight+1)) + (X *chunkSettings.depth *(chunkSettings.maxHeight+1))
+  
+end
+
 --rl.SetConfigFlags(rl.FLAG_VSYNC_HINT)
 
 --rl.InitWindow(gameSettings.WindowResolution.x, gameSettings.WindowResolution.y, gameSettings.defaultWindowTitle)
@@ -455,7 +490,8 @@ function chunkMeshGenerator(X,Y)
     for localZi = 0, chunkSettings.depth, 1 do 
       --local threadYAxis = coroutine.create(function() 
         for localYi = 0, chunkSettings.maxHeight, 1 do
-          local cube = ChunkTable[localXi][localZi][localYi]  
+          local cube = ChunkTable[findChunkInfoOptimized(localXi, localZi, localYi)]
+         -- local cube = ChunkTable[localXi][localZi][localYi]  
           local cubePosition = rl.new("Vector3",localXi + ((chunkSettings.width + 1) * X) ,localYi,localZi + ((chunkSettings.depth + 1) * Y))
           local matrixTransformation = rl.new("Matrix",
             1,0,0,cubePosition.x,
@@ -519,12 +555,12 @@ function chunkMeshGenerator(X,Y)
             -- XX YY ZZ
             -- +- +- +-    
             if localXi + 1 <= chunkSettings.width then
-              local cubeXPos = ChunkTable[localXi+1][localZi][localYi] 
+              local cubeXPos = ChunkTable[findChunkInfoOptimized(localXi+1, localZi, localYi)]
               if cubeXPos == 1 then
                 sidesToRender[1] = true
               end
             else
-              local cubeXPos2 = currentLoadedMap[X+1][Y][0][localZi][localYi]
+              local cubeXPos2 = currentLoadedMap[X+1][Y][findChunkInfoOptimized(0,localZi,localYi)] 
                 if cubeXPos2 == 1 then
                   sidesToRender[1] = true
                 else  
@@ -534,12 +570,12 @@ function chunkMeshGenerator(X,Y)
             end
                 
             if localXi - 1 >= 0 then
-              local cubeXNeg = ChunkTable[localXi-1][localZi][localYi] 
+              local cubeXNeg = ChunkTable[findChunkInfoOptimized(localXi-1, localZi, localYi)]
               if cubeXNeg == 1 then
                 sidesToRender[2] = true
               end
             else
-                local cubeXPos2 = currentLoadedMap[X-1][Y][chunkSettings.width][localZi][localYi]
+                local cubeXPos2 = currentLoadedMap[X-1][Y][findChunkInfoOptimized(chunkSettings.width, localZi, localYi)]
                 if cubeXPos2 == 1 then
                   sidesToRender[2] = true
                 else  
@@ -549,7 +585,7 @@ function chunkMeshGenerator(X,Y)
             end 
                 
             if localYi + 1 <= chunkSettings.maxHeight then
-              local cubeYPos = ChunkTable[localXi][localZi][localYi+1] 
+              local cubeYPos = ChunkTable[findChunkInfoOptimized(localXi, localZi, localYi+1)]
               if cubeYPos == 1 then
                 sidesToRender[3] = true
               end
@@ -558,7 +594,7 @@ function chunkMeshGenerator(X,Y)
             end
                   
             if localYi - 1 >= 0 then
-              local cubeYNeg = ChunkTable[localXi][localZi][localYi-1] 
+              local cubeYNeg = ChunkTable[findChunkInfoOptimized(localXi, localZi, localYi-1)]
               if cubeYNeg == 1 then
                 sidesToRender[4] = true
               end
@@ -567,12 +603,12 @@ function chunkMeshGenerator(X,Y)
             end 
                   
             if localZi + 1 <= chunkSettings.depth then
-              local cubeZPos = ChunkTable[localXi][localZi+1][localYi] 
+              local cubeZPos = ChunkTable[findChunkInfoOptimized(localXi, localZi+1, localYi)]
               if cubeZPos == 1 then
                 sidesToRender[5] = true
               end
             else
-                local cubeXPos2 = currentLoadedMap[X][Y+1][localXi][0][localYi]
+                local cubeXPos2 = currentLoadedMap[X][Y+1][findChunkInfoOptimized(localXi, 0, localYi)]
                 if cubeXPos2 == 1 then
                   sidesToRender[5] = true
                 else  
@@ -582,12 +618,12 @@ function chunkMeshGenerator(X,Y)
             end
                   
             if localZi - 1 >= 0 then
-              local cubeZNeg = ChunkTable[localXi][localZi-1][localYi] 
+              local cubeZNeg = ChunkTable[findChunkInfoOptimized(localXi, localZi-1, localYi)]
               if cubeZNeg == 1 then
                 sidesToRender[6] = true
               end
             else
-                local cubeXPos2 = currentLoadedMap[X][Y-1][localXi][chunkSettings.depth][localYi]
+                local cubeXPos2 = currentLoadedMap[X][Y-1][findChunkInfoOptimized(localXi, chunkSettings.depth, localYi)]
                 if cubeXPos2 == 1 then
                   sidesToRender[6] = true
                 else  
@@ -1191,29 +1227,29 @@ function chunkGeneration(X,Y, renderMesh)
   local localChunk = {}
 
   for localX = 0, chunkSettings.depth, 1 do
-    if not localChunk[localX] then
-      localChunk[localX] = {}
-    end
+   -- if not localChunk[localX] then
+    --  localChunk[localX] = {}
+  --  end
     
     for localZ = 0, chunkSettings.width, 1 do
-      if not localChunk[localX][localZ] then
-        localChunk[localX][localZ] = {}
-      end
+     -- if not localChunk[localX][localZ] then
+        --localChunk[localX][localZ] = {}
+      --end
       for localY = 0, chunkSettings.maxHeight, 1 do
         
         if localY == 0 then
-          localChunk[localX][localZ][localY] = 9
+          localChunk[findChunkInfoOptimized(localX, localZ, localY)] = 9
         elseif localY < 60 then
-          localChunk[localX][localZ][localY] = 8
+          localChunk[findChunkInfoOptimized(localX, localZ, localY)] = 8
         elseif localY < 64 then
-          localChunk[localX][localZ][localY] = 2
+          localChunk[findChunkInfoOptimized(localX, localZ, localY)] = 2
         
         else
           
           if localY == 64 then
-            localChunk[localX][localZ][localY] = 3
+            localChunk[findChunkInfoOptimized(localX, localZ, localY)] = 3
           else
-            localChunk[localX][localZ][localY] = 1
+            localChunk[findChunkInfoOptimized(localX, localZ, localY)] = 1
           end
         
 
@@ -1282,6 +1318,11 @@ function renderMapBasic()
    
        for chunkXi, chunkX in pairs(currentLoadedMap) do
         for chunkYi, chunkY in pairs(chunkX) do
+          
+          --localChunk[findChunkInfoOptimized(localX, localZ, localY)]
+          
+          --UPDATE ME
+          
           for localXi = 0, chunkSettings.width, 1 do -- cube
             for localZi = 0, chunkSettings.depth, 1 do 
               for localYi = 0, chunkSettings.maxHeight, 1 do
@@ -1320,6 +1361,9 @@ function renderMapBasic()
     
     for chunkXi, chunkX in pairs(currentLoadedMap) do
       for chunkYi, chunkY in pairs(chunkX) do
+        
+        --UPDATE ME
+        
         for localXi = 0, chunkSettings.width, 1 do -- cube
           for localZi = 0, chunkSettings.depth, 1 do 
               for localYi = 0, chunkSettings.maxHeight, 1 do
@@ -1616,7 +1660,21 @@ function handlePlayerInput()
   rl.CameraYaw(localPlayer.Camera, -(mouseDelta.x)*mouseSensitivity*deltaTime, false)
   rl.CameraPitch(localPlayer.Camera, -(mouseDelta.y)*mouseSensitivity*deltaTime, true, false, false)
 
+  local appropriateMeshesCheck = {}
+  
+  local playerPosition = localPlayer.Camera.position
+  local playerChunkX
+  local playerChunkZ 
+  local playerChunkXRemainder = playerPosition.x % chunkSettings.width
+  local playerChunkZRemainder = playerPosition.z % chunkSettings.depth
+  
+  playerChunkX = math.floor(((playerPosition.x + (chunkSettings.width/2) - playerChunkXRemainder) / chunkSettings.width) +0) 
+  playerChunkZ = math.floor(((playerPosition.z + (chunkSettings.depth/2) - playerChunkZRemainder) / chunkSettings.depth) +0)
 
+  --print("seperatecoords")
+  --print(playerChunkX)
+  --print(playerChunkZ)
+  
     
   
     if rl.IsKeyDown(rl.KEY_W) then -- forward
@@ -1679,7 +1737,7 @@ function handlePlayerInput()
   
   end
     
-    local jumpVelocity = 6
+    local jumpVelocity = 5
     
     if rl.IsKeyDown(rl.KEY_SPACE) then -- jump
       -- check for if grounded,
@@ -1763,7 +1821,7 @@ function handlePlayerInput()
   if rl.IsMouseButtonPressed(rl.MOUSE_BUTTON_LEFT) then    
     local centerScreen = rl.new("Vector2",gameSettings.WindowResolution.x/2, gameSettings.WindowResolution.y/2)
     local ray = rl.GetMouseRay(centerScreen, localPlayer.Camera)
-    local maxRange = 10
+    local maxRange = 4
     local currentDistance = maxRange
     local bestCollisionInfo 
     local chunkToEditX
@@ -1818,14 +1876,14 @@ function handlePlayerInput()
       print("BAD1")    
     elseif not currentLoadedMap[chunkToEditX][chunkToEditY] then
       print("BAD2")
-    elseif not currentLoadedMap[chunkToEditX][chunkToEditY][localXCoord] then
-      print("BAD3") -- apparently this triggers
-    elseif not currentLoadedMap[chunkToEditX][chunkToEditY][localXCoord][localZCoord] then
-      print("BAD4")
-    elseif not currentLoadedMap[chunkToEditX][chunkToEditY][localXCoord][localZCoord][localYCoord] then
-      print("BAD5")
-    else
-      currentLoadedMap[chunkToEditX][chunkToEditY][localXCoord][localZCoord][localYCoord] = 1
+    --elseif not currentLoadedMap[chunkToEditX][chunkToEditY][localXCoord] then
+      --print("BAD3") -- apparently this triggers
+   -- elseif not currentLoadedMap[chunkToEditX][chunkToEditY][localXCoord][localZCoord] then
+     -- print("BAD4")
+   -- elseif not currentLoadedMap[chunkToEditX][chunkToEditY][localXCoord][localZCoord][localYCoord] then
+    --  print("BAD5")
+  else
+      currentLoadedMap[chunkToEditX][chunkToEditY][findChunkInfoOptimized(localXCoord,localZCoord,localYCoord)] = 1
       chunkMeshGenerator(chunkToEditX,chunkToEditY)
   
     end
@@ -1844,7 +1902,7 @@ function handlePlayerInput()
   if rl.IsMouseButtonPressed(rl.MOUSE_BUTTON_RIGHT) then    
     local centerScreen = rl.new("Vector2",gameSettings.WindowResolution.x/2, gameSettings.WindowResolution.y/2)
     local ray = rl.GetMouseRay(centerScreen, localPlayer.Camera)
-    local maxRange = 10
+    local maxRange = 4
     local currentDistance = maxRange
     local bestCollisionInfo 
     local chunkToEditX
@@ -1900,12 +1958,12 @@ function handlePlayerInput()
       print("BAD1")    
     elseif not currentLoadedMap[chunkToEditX][chunkToEditY] then
       print("BAD2")
-    elseif not currentLoadedMap[chunkToEditX][chunkToEditY][localXCoord] then
-      print("BAD3") -- apparently this triggers
-    elseif not currentLoadedMap[chunkToEditX][chunkToEditY][localXCoord][localZCoord] then
-      print("BAD4")
-    elseif not currentLoadedMap[chunkToEditX][chunkToEditY][localXCoord][localZCoord][localYCoord] then
-      print("BAD5")
+    --elseif not currentLoadedMap[chunkToEditX][chunkToEditY][localXCoord] then
+   --   print("BAD3") -- apparently this triggers
+    --elseif not currentLoadedMap[chunkToEditX][chunkToEditY][localXCoord][localZCoord] then
+   --   print("BAD4")
+    --elseif not currentLoadedMap[chunkToEditX][chunkToEditY][localXCoord][localZCoord][localYCoord] then
+    --  print("BAD5")
     else
       local placedItem 
       local placedItemNumber = 2
@@ -1931,7 +1989,7 @@ function handlePlayerInput()
       placedItemNumber = blockInfoFoundTablei
       
       if blockInfoFoundTable then
-        currentLoadedMap[chunkToEditX][chunkToEditY][localXCoord][localZCoord][localYCoord] = placedItemNumber
+        currentLoadedMap[chunkToEditX][chunkToEditY][findChunkInfoOptimized(localXCoord, localZCoord, localYCoord)] = placedItemNumber
         chunkMeshGenerator(chunkToEditX,chunkToEditY)
       end
       
@@ -2188,6 +2246,7 @@ function renderHeldItem(playerNumber)
 end
 
 function windowDraw()
+  
   --rl.UpdateCamera(playerInfos.Player1.Camera, rl.CAMERA_FIRST_PERSON)
 
   --rl.BeginDrawing()
@@ -2272,9 +2331,9 @@ function windowDraw()
 end
 
 
-while not rl.WindowShouldClose() do
-    
-  handlePlayerInput()
+
+function inGameFunction()
+    handlePlayerInput()
   
   if not gameSettings.allowWorldGeneration then
     if not currentLoadedMap[0] or not currentLoadedMap[0][0] then
@@ -2399,6 +2458,32 @@ while not rl.WindowShouldClose() do
   end
   
 	windowDraw()
+  
+end
+
+
+
+local menuCam = rl.new("Camera2D")
+
+function menuFunction()
+  rl.ClearBackground(rl.SKYBLUE)
+  rl.BeginDrawing()
+  rl.BeginMode2D(menuCam)
+  
+  
+  rl.EndMode2D()
+  rl.EndDrawing()
+
+end
+
+while not rl.WindowShouldClose() do
+  if currentGameState == "MainMenu" then
+    currentGameState = "Game" -- update with ui for selecting world, saving / loading and connecting controllers
+    menuFunction()
+  else
+    inGameFunction()
+  end
+
 end
 
 rl.CloseWindow()
