@@ -5,7 +5,7 @@ gameSettings = {
   defaultWindowTitle = "Luacraft",
   targetFPS = 120*1,
   allowWorldGeneration = false, -- false only generates one chunk, at 0,0
-  renderDistance = 8,
+  renderDistance = 16,
   runSplitscreen = false,
   localPlayerCount = 3,
   }
@@ -305,6 +305,39 @@ local function listWorldData()
   
 end
 
+local function getChunkMatrixPosition(X,Z)
+  --replaces existing logic to unify it all in one go
+  local meshPosition = rl.new("Vector3",(X-0.5) * (chunkSettings.width+1),0,(Z-0.5) * (chunkSettings.depth+1) )
+
+  local matrixTransformation = rl.new("Matrix",
+    1,0,0,math.floor(meshPosition.x + 0.5),
+    0,1,0,math.floor(meshPosition.y + 0.5),
+    0,0,1,math.floor(meshPosition.z + 0.5),
+    0,0,0,1)
+  
+  return meshPosition, matrixTransformation
+  
+end
+
+local function getPlayerChunk(playerNumber)
+  local localPlayer = playerInfos["Player" .. playerNumber]
+  
+  local playerPosition = localPlayer.Camera.position
+  local playerChunkX
+  local playerChunkZ 
+  local playerChunkXRemainder = playerPosition.x % chunkSettings.width
+  local playerChunkZRemainder = playerPosition.z % chunkSettings.depth
+  
+  playerChunkX = math.floor(((playerPosition.x + (chunkSettings.width/2) - playerChunkXRemainder) / chunkSettings.width) +0) 
+  playerChunkZ = math.floor(((playerPosition.z + (chunkSettings.depth/2) - playerChunkZRemainder) / chunkSettings.depth) +0)
+
+  --print("seperatecoords")
+  --print(playerChunkX)
+  --print(playerChunkZ)
+  
+  return playerChunkX, playerChunkZ
+  
+end
 
 shapeInfos = {
     "Cube",
@@ -1287,13 +1320,7 @@ rl.SetMaterialTexture(defaultMaterial, rl.MATERIAL_MAP_DIFFUSE, bigImage)
 function renderMapMeshes()
   for chunkXi, chunkY in pairs(currentLoadedMapMeshes) do
     for chunkYi, generatedMesh in pairs(chunkY) do
-      local meshPosition = rl.new("Vector3",(chunkXi-0.5) * (chunkSettings.width+1),0,(chunkYi-0.5) * (chunkSettings.depth+1) )
-
-      local matrixTransformation = rl.new("Matrix",
-        1,0,0,math.floor(meshPosition.x + 0.5),
-        0,1,0,math.floor(meshPosition.y + 0.5),
-        0,0,1,math.floor(meshPosition.z + 0.5),
-        0,0,0,1)
+      local meshPosition, matrixTransformation = getChunkMatrixPosition(chunkXi,chunkYi)
       
       --rl.DrawModel(rl.LoadModelFromMesh(generatedMesh), meshPosition, 1, rl.new("Color",0,0,0))
 
@@ -1662,20 +1689,32 @@ function handlePlayerInput()
 
   local appropriateMeshesCheck = {}
   
-  local playerPosition = localPlayer.Camera.position
-  local playerChunkX
-  local playerChunkZ 
-  local playerChunkXRemainder = playerPosition.x % chunkSettings.width
-  local playerChunkZRemainder = playerPosition.z % chunkSettings.depth
+  local playerChunkX, playerChunkZ = getPlayerChunk(1)
   
-  playerChunkX = math.floor(((playerPosition.x + (chunkSettings.width/2) - playerChunkXRemainder) / chunkSettings.width) +0) 
-  playerChunkZ = math.floor(((playerPosition.z + (chunkSettings.depth/2) - playerChunkZRemainder) / chunkSettings.depth) +0)
-
-  --print("seperatecoords")
-  --print(playerChunkX)
-  --print(playerChunkZ)
-  
+  if gameSettings.allowWorldGeneration then
+    --UPDATE ME
+    if not appropriateMeshesCheck[0] then
+      appropriateMeshesCheck[0] = {}
+    end
+    if currentLoadedMapMeshes[0] and currentLoadedMapMeshes[0][0] then
+      appropriateMeshesCheck[0][0] = currentLoadedMapMeshes[0][0]
+    end
     
+  else
+    -- Its only gonna be 0,0
+    if not appropriateMeshesCheck[0] then
+      appropriateMeshesCheck[0] = {}
+    end
+    if not appropriateMeshesCheck[0][0] then
+      appropriateMeshesCheck[0][0] = {}
+    end
+    
+    if currentLoadedMapMeshes[0] and currentLoadedMapMeshes[0][0] then
+      appropriateMeshesCheck[0][0] = currentLoadedMapMeshes[0][0]
+    end
+    
+  end
+  
   
     if rl.IsKeyDown(rl.KEY_W) then -- forward
       rl.CameraMoveForward(localPlayer.Camera, walkSpeed * deltaTime, true);
@@ -1706,15 +1745,9 @@ function handlePlayerInput()
     local bestCollisionInfo 
 
     
-    for chunkXi, chunkY in pairs(currentLoadedMapMeshes) do
+    for chunkXi, chunkY in pairs(appropriateMeshesCheck) do
       for chunkYi, generatedMesh in pairs(chunkY) do
-       local meshPosition = rl.new("Vector3",(chunkXi-0.5) * (chunkSettings.width+1),0,(chunkYi-0.5) * (chunkSettings.depth+1) )
-
-      local matrixTransformation = rl.new("Matrix",
-        1,0,0,math.floor(meshPosition.x + 0.5),
-        0,1,0,math.floor(meshPosition.y + 0.5),
-        0,0,1,math.floor(meshPosition.z + 0.5),
-        0,0,0,1)
+      local meshPosition, matrixTransformation = getChunkMatrixPosition(chunkXi,chunkYi)
       
         --rl.DrawMesh(generatedMesh, defaultMaterial, matrixTransformation)
         
@@ -1827,15 +1860,9 @@ function handlePlayerInput()
     local chunkToEditX
     local chunkToEditY
 
-    for chunkXi, chunkY in pairs(currentLoadedMapMeshes) do
+    for chunkXi, chunkY in pairs(appropriateMeshesCheck) do
       for chunkYi, generatedMesh in pairs(chunkY) do
-       local meshPosition = rl.new("Vector3",(chunkXi-0.5) * (chunkSettings.width+1),0,(chunkYi-0.5) * (chunkSettings.depth+1) )
-
-      local matrixTransformation = rl.new("Matrix",
-        1,0,0,math.floor(meshPosition.x + 0.5),
-        0,1,0,math.floor(meshPosition.y + 0.5),
-        0,0,1,math.floor(meshPosition.z + 0.5),
-        0,0,0,1)
+       local meshPosition, matrixTransformation = getChunkMatrixPosition(chunkXi,chunkYi)
       
         --rl.DrawMesh(generatedMesh, defaultMaterial, matrixTransformation)
         
@@ -1909,15 +1936,9 @@ function handlePlayerInput()
     local chunkToEditY
 
     
-    for chunkXi, chunkY in pairs(currentLoadedMapMeshes) do
+    for chunkXi, chunkY in pairs(appropriateMeshesCheck) do
       for chunkYi, generatedMesh in pairs(chunkY) do
-       local meshPosition = rl.new("Vector3",(chunkXi-0.5) * (chunkSettings.width+1),0,(chunkYi-0.5) * (chunkSettings.depth+1) )
-
-      local matrixTransformation = rl.new("Matrix",
-        1,0,0,math.floor(meshPosition.x + 0.5),
-        0,1,0,math.floor(meshPosition.y + 0.5),
-        0,0,1,math.floor(meshPosition.z + 0.5),
-        0,0,0,1)
+       local meshPosition, matrixTransformation = getChunkMatrixPosition(chunkXi,chunkYi)
       
         --rl.DrawMesh(generatedMesh, defaultMaterial, matrixTransformation)
         
