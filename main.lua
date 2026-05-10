@@ -5,9 +5,10 @@ gameSettings = {
   defaultWindowTitle = "Luacraft",
   targetFPS = 120*1, -- dont let it go too high or physics break
   allowWorldGeneration = true, -- false only generates one chunk, at 0,0
-  renderDistance = 1,
+  renderDistance = 8,
   runSplitscreen = false,
   localPlayerCount = 4,
+  worldType = 1, -- 0 is flat, 1 is perlinNoise
   }
 
 local currentGameState = "MainMenu"
@@ -1286,6 +1287,8 @@ end
 function chunkGeneration(X,Y, renderMesh)
   local localChunk = {}
 
+
+if gameSettings.worldType == 0 then
   for localX = 0, chunkSettings.depth, 1 do
    -- if not localChunk[localX] then
     --  localChunk[localX] = {}
@@ -1318,6 +1321,53 @@ function chunkGeneration(X,Y, renderMesh)
       end
     end
   end
+elseif gameSettings.worldType == 1 then
+  local perlinNoiseImg = rl.GenImagePerlinNoise(chunkSettings.width, chunkSettings.depth, chunkSettings.width * X, chunkSettings.depth * Y, 1)
+  local colorArray = rl.LoadImageColors(perlinNoiseImg)
+  
+  for localX = 0, chunkSettings.width, 1 do
+    for localZ = 0, chunkSettings.depth, 1 do
+      local colorArrayIndex = (localZ * chunkSettings.width) + localX
+      local pixelColor = colorArray[colorArrayIndex]
+      
+      local heightSpecific = 48 + math.floor(pixelColor.r / 32)
+      --print("color: " .. heightSpecific)
+      
+      local bedrockPos = 0
+      local stonepos = heightSpecific
+      local dirtpos = heightSpecific + 4
+      local grasspos = heightSpecific + 5
+      
+      for localY = 0, chunkSettings.maxHeight, 1 do
+      
+        if localY == bedrockPos then
+          -- bedrock is 9
+          localChunk[findChunkInfoOptimized(localX, localZ, localY)] = 9
+        elseif localY <= stonepos then
+          -- stone is 8
+         localChunk[findChunkInfoOptimized(localX, localZ, localY)] = 8
+        elseif localY <= dirtpos then
+          -- dirt is 2
+          localChunk[findChunkInfoOptimized(localX, localZ, localY)] = 2
+        elseif localY <= grasspos then
+          -- grass is 3
+          localChunk[findChunkInfoOptimized(localX, localZ, localY)] = 3
+        else 
+          --air is 1
+          localChunk[findChunkInfoOptimized(localX, localZ, localY)] = 1
+        end
+      
+      end
+      
+    end
+  end
+    
+  
+  
+else
+  print("Bad world type set.")
+  
+end
 
 
   if not currentLoadedMap[X] then
@@ -1823,7 +1873,7 @@ function handlePlayerInput()
   
   if currentDistance ~= maxRange then
     playerDistanceGround = currentDistance
-    print("Distance: " ..  math.floor(playerDistanceGround + 0.5))
+    --print("Distance: " ..  math.floor(playerDistanceGround + 0.5))
   else
     print("Nothing below player?")
     currentDistance = 100000
