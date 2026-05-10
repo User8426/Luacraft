@@ -3,11 +3,11 @@ local ffi = require("ffi")
 gameSettings = {
   WindowResolution = rl.new("Vector2", 1280,720),
   defaultWindowTitle = "Luacraft",
-  targetFPS = 120*1,
-  allowWorldGeneration = false, -- false only generates one chunk, at 0,0
-  renderDistance = 16,
+  targetFPS = 120*1, -- dont let it go too high or physics break
+  allowWorldGeneration = true, -- false only generates one chunk, at 0,0
+  renderDistance = 1,
   runSplitscreen = false,
-  localPlayerCount = 3,
+  localPlayerCount = 4,
   }
 
 local currentGameState = "MainMenu"
@@ -307,7 +307,7 @@ end
 
 local function getChunkMatrixPosition(X,Z)
   --replaces existing logic to unify it all in one go
-  local meshPosition = rl.new("Vector3",(X-0.5) * (chunkSettings.width+1),0,(Z-0.5) * (chunkSettings.depth+1) )
+  local meshPosition = rl.new("Vector3",(X-0) * (chunkSettings.width+1),0,(Z-0) * (chunkSettings.depth+1) )
 
   local matrixTransformation = rl.new("Matrix",
     1,0,0,math.floor(meshPosition.x + 0.5),
@@ -328,15 +328,42 @@ local function getPlayerChunk(playerNumber)
   local playerChunkXRemainder = playerPosition.x % chunkSettings.width
   local playerChunkZRemainder = playerPosition.z % chunkSettings.depth
   
-  playerChunkX = math.floor(((playerPosition.x + (chunkSettings.width/2) - playerChunkXRemainder) / chunkSettings.width) +0) 
-  playerChunkZ = math.floor(((playerPosition.z + (chunkSettings.depth/2) - playerChunkZRemainder) / chunkSettings.depth) +0)
+  playerChunkX = math.floor((playerPosition.x / (chunkSettings.width+1)) +0) 
+  playerChunkZ = math.floor((playerPosition.z / (chunkSettings.depth+1)) +0)
 
   --print("seperatecoords")
   --print(playerChunkX)
   --print(playerChunkZ)
   
+
   return playerChunkX, playerChunkZ
   
+end
+
+local function inBlock(playerNumber)
+  --for use by would collide and placing blocks.
+  --returns if they are in the block position specified. 
+  
+  
+end
+
+local function wouldCollide(playerNumber)
+  --use isblock to find out what blocks they occupy then manually check if its air or not
+
+
+end
+
+local function isGrounded(playerNumber)
+  --check is velocity 0 and are they close enough to ground
+
+
+end
+
+local function playerPhysics(playerNumber)
+  --does each axis velocity here, also splits the player bounding box into all manual checks needed.
+  --PLAYER BB 0.5,0.5,2.5 XZY
+
+
 end
 
 shapeInfos = {
@@ -1688,16 +1715,20 @@ function handlePlayerInput()
   rl.CameraPitch(localPlayer.Camera, -(mouseDelta.y)*mouseSensitivity*deltaTime, true, false, false)
 
   local appropriateMeshesCheck = {}
-  
+
   local playerChunkX, playerChunkZ = getPlayerChunk(1)
   
   if gameSettings.allowWorldGeneration then
-    --UPDATE ME
-    if not appropriateMeshesCheck[0] then
-      appropriateMeshesCheck[0] = {}
-    end
-    if currentLoadedMapMeshes[0] and currentLoadedMapMeshes[0][0] then
-      appropriateMeshesCheck[0][0] = currentLoadedMapMeshes[0][0]
+  
+    for i1 = -1, 1, 1 do
+      for i2 = -1, 1, 1 do
+        if not appropriateMeshesCheck[playerChunkX + i1] then
+          appropriateMeshesCheck[playerChunkX + i1] = {}
+        end
+        if currentLoadedMapMeshes[playerChunkX + i1] and currentLoadedMapMeshes[playerChunkX + i1][playerChunkZ + i2] then
+          appropriateMeshesCheck[playerChunkX + i1][playerChunkZ + i2] = currentLoadedMapMeshes[playerChunkX + i1][playerChunkZ + i2]
+        end
+      end 
     end
     
   else
@@ -1733,7 +1764,7 @@ function handlePlayerInput()
       
     end
     local playerDistanceGround
-    local playerHeight = 2
+    local playerHeight = 2 + 1
     
     local ray = rl.new("Ray")
     
@@ -1744,33 +1775,71 @@ function handlePlayerInput()
     local currentDistance = maxRange
     local bestCollisionInfo 
 
-    
-    for chunkXi, chunkY in pairs(appropriateMeshesCheck) do
-      for chunkYi, generatedMesh in pairs(chunkY) do
-      local meshPosition, matrixTransformation = getChunkMatrixPosition(chunkXi,chunkYi)
+    local playerPosition = rl.new("Vector3", math.floor(localPlayer.Camera.position.x % (chunkSettings.width+1)), math.floor(localPlayer.Camera.position.y),  math.floor(localPlayer.Camera.position.z % (chunkSettings.depth+1)))
+
+    for i = 1, maxRange, 1 do
+      --check block
+      
+      if not currentLoadedMap[playerChunkX] or not currentLoadedMap[playerChunkX][playerChunkZ] then
+        currentDistance = maxRange
+        print("skipping")
+        break
+      end
+
+      local block = currentLoadedMap[playerChunkX][playerChunkZ][findChunkInfoOptimized(playerPosition.x, playerPosition.z, playerPosition.y)]
+      
+    -- if not add 1 and continue, else break
+               
+      if block ~= 1 then
+        currentDistance = i + ( localPlayer.Camera.position.y - math.floor(localPlayer.Camera.position.y))
+        break
+      else
+        playerPosition = rl.new("Vector3", playerPosition.x, playerPosition.y - 1, playerPosition.z)
+        --continue
+      end      
+      
+      
+      
+    end
+
+--    for chunkXi, chunkY in pairs(appropriateMeshesCheck) do
+--      for chunkYi, generatedMesh in pairs(chunkY) do
+ --     local meshPosition, matrixTransformation = getChunkMatrixPosition(chunkXi,chunkYi)
+      
+      --print(meshPosition.x .. "." .. meshPosition.y .. "." .. meshPosition.z )
       
         --rl.DrawMesh(generatedMesh, defaultMaterial, matrixTransformation)
         
-      local meshHitInfo = rl.GetRayCollisionMesh(ray, generatedMesh, matrixTransformation)
+--      local meshHitInfo = rl.GetRayCollisionMesh(ray, generatedMesh, matrixTransformation)
       
-      if meshHitInfo.hit and meshHitInfo.distance < currentDistance then
-        currentDistance = meshHitInfo.distance
-        bestCollisionInfo = meshHitInfo
-      end
-      
-    end
-  end
-
+--        if meshHitInfo.hit and meshHitInfo.distance < currentDistance then
+--          currentDistance = meshHitInfo.distance
+ --         bestCollisionInfo = meshHitInfo
+--        end
+--      
+--      end
+--    end
+  
   
   if currentDistance ~= maxRange then
     playerDistanceGround = currentDistance
+    print("Distance: " ..  math.floor(playerDistanceGround + 0.5))
   else
     print("Nothing below player?")
     currentDistance = 100000
   
   end
+   
+   local jumpVelocity = 5
     
-    local jumpVelocity = 5
+    --rewrite collision system to auto work out each square of a player
+    --e.g make a bounding box, subdivide to work out how many possible blocks its other and check the corners / blocks
+    
+    --this means rewrite to a entity system (so have a function that goes through all players and auto does it)
+    -- (also have some functions to check for ifGrounded, wouldCollide, inBlock etc)
+    --Also rewrite to fully be velocity based.
+    
+    --later rewrite to do multiple checks if velocity is large enough to skip blocks, use math to work out how many to check based on player size
     
     if rl.IsKeyDown(rl.KEY_SPACE) then -- jump
       -- check for if grounded,
@@ -1882,9 +1951,9 @@ function handlePlayerInput()
   
   if currentDistance ~= maxRange then
     print("Last Hit was: " .. currentDistance .. " units away.") -- use - below to go into the block
-    local localXCoord = (math.floor( (bestCollisionInfo.point.x - (bestCollisionInfo.normal.x/2) ) + 0) + (chunkSettings.width/2)) % (chunkSettings.width + 1 )
+    local localXCoord = (math.floor( (bestCollisionInfo.point.x - (bestCollisionInfo.normal.x/2) ) + 0) + 0) % (chunkSettings.width + 1 )
     local localYCoord = math.floor( (bestCollisionInfo.point.y - (bestCollisionInfo.normal.y/2) ) + 1)
-    local localZCoord = (math.floor( (bestCollisionInfo.point.z - (bestCollisionInfo.normal.z/2) ) + 0) + (chunkSettings.depth/2)) % (chunkSettings.depth + 1 )
+    local localZCoord = (math.floor( (bestCollisionInfo.point.z - (bestCollisionInfo.normal.z/2) ) + 0) + 0) % (chunkSettings.depth + 1 )
     
     --localXCoord = chunkSettings.width - localXCoord -- flip em
     --localZCoord = chunkSettings.depth - localXCoord
@@ -1958,9 +2027,9 @@ function handlePlayerInput()
   
   if currentDistance ~= maxRange then
     print("Last Hit was: " .. currentDistance .. " units away.") -- use - below to go into the block
-    local localXCoord = (math.floor( (bestCollisionInfo.point.x + (bestCollisionInfo.normal.x/2) ) + 0) + (chunkSettings.width/2)) % (chunkSettings.width + 1 )
+    local localXCoord = (math.floor( (bestCollisionInfo.point.x + (bestCollisionInfo.normal.x/2) ) + 0) + 0) % (chunkSettings.width + 1 )
     local localYCoord = math.floor( (bestCollisionInfo.point.y + (bestCollisionInfo.normal.y/2) ) + 1)
-    local localZCoord = (math.floor( (bestCollisionInfo.point.z + (bestCollisionInfo.normal.z/2) ) + 0) + (chunkSettings.depth/2)) % (chunkSettings.width + 1 )
+    local localZCoord = (math.floor( (bestCollisionInfo.point.z + (bestCollisionInfo.normal.z/2) ) + 0) + 0) % (chunkSettings.width + 1 )
     
     --localXCoord = chunkSettings.width - localXCoord -- flip em
     --localZCoord = chunkSettings.depth - localXCoord
