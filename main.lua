@@ -560,22 +560,30 @@ local function rayCastDDA(StartX, StartY, StartZ, playerNumber)
     rayZ = rayZ + (normalisedDz * raycastTravelAmount)
     
     if rayX >= chunkSettings.width + 1 then
+      print(rayX .. " is the rayX")
+      print(chunkSettings.width)
       rayX = rayX - chunkSettings.width
       chunkX = chunkX + 1
       print("Incrementing chunkX")
     end
     if rayZ >= chunkSettings.depth + 1 then
+      print(rayZ .. " is the rayZ")
+      print(chunkSettings.depth)
       rayZ = rayZ - chunkSettings.depth
       chunkZ = chunkZ + 1
       print("Incrementing chunkZ")
     end
     
     if rayX < 0 then
+      print(rayX .. " is the rayX")
+      print(chunkSettings.width)
       rayX = rayX + chunkSettings.width
       chunkX = chunkX - 1
       print("Decreasing chunkX")
     end
     if rayZ < 0 then
+      print(rayZ .. " is the rayZ")
+      print(chunkSettings.depth)
       rayZ = rayZ + chunkSettings.depth 
       chunkZ = chunkZ - 1
       print("Decreasing chunkZ")
