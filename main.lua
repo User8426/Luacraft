@@ -601,7 +601,7 @@ local function rayCastDDA(StartX, StartY, StartZ, playerNumber)
       print("BLOCK IS VALID")
       foundBlock = true
       blockType = raycastedBlock
-      blockPos = rl.new("Vector3", math.floor(rayX), math.floor(rayZ), math.floor(rayY))
+      blockPos = rl.new("Vector3", math.floor(rayX), math.floor(rayY), math.floor(rayZ))
       blockDistance = math.sqrt( math.pow(rayX - localCamera.position.x,2) + math.pow(rayY - localCamera.position.y,2) + math.pow(rayZ - localCamera.position.z,2)  )
     end
 
