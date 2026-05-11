@@ -4,11 +4,11 @@ gameSettings = {
   WindowResolution = rl.new("Vector2", 1280,720),
   defaultWindowTitle = "Luacraft",
   targetFPS = 120*1, -- dont let it go too high or physics break
-  allowWorldGeneration = true, -- false only generates one chunk, at 0,0
+  allowWorldGeneration = false, -- false only generates one chunk, at 0,0
   renderDistance = 8,
   runSplitscreen = false,
   localPlayerCount = 4,
-  worldType = 1, -- 0 is flat, 1 is perlinNoise
+  worldType = 0, -- 0 is flat, 1 is perlinNoise
   }
 
 local currentGameState = "MainMenu"
@@ -515,6 +515,110 @@ local function findChunkInfoOptimized(X,Z,Y)
   
   return Y + (Z *(chunkSettings.maxHeight+1)) + (X *chunkSettings.depth *(chunkSettings.maxHeight+1))
   
+end
+
+local function rayCastDDA(StartX, StartY, StartZ, playerNumber)
+  
+  local localPlayer = playerInfos["Player" .. playerNumber]
+  local localCamera = localPlayer.Camera
+  
+  local blockPos, blockType, blockDistance
+  local foundBlock = false
+  
+  chunkX, chunkZ = getPlayerChunk(playerNumber)
+  
+  local dx = localCamera.target.x - localCamera.position.x
+  local dy = localCamera.target.y - localCamera.position.y
+  local dz = localCamera.target.z - localCamera.position.z
+
+  local rayX = localCamera.position.x
+  local rayY = localCamera.position.y
+  local rayZ = localCamera.position.z
+
+  local chunkX, chunkZ = getPlayerChunk(playerNumber)
+
+  --apparently a fast way to calculate raycasts in a voxel world, look up DDA.
+  local raycastTravelAmount = 0.05 --this isnt dda but eh why not
+  local distanceTraveled = 0
+  local maxIterations = 1000
+  local currentIteration = 0
+  
+  local divisor = math.abs(dx) + math.abs(dy) + math.abs(dz)
+  
+  local normalisedDx = dx/ divisor
+  local normalisedDy = dy/ divisor
+  local normalisedDz = dz/ divisor
+  
+  print(normalisedDx)
+  print(normalisedDy)
+  print(normalisedDz)
+  
+  while foundBlock == false and currentIteration < maxIterations do 
+    currentIteration = currentIteration + 1
+    rayX = rayX + (normalisedDx * raycastTravelAmount)
+    rayY = rayY + (normalisedDy * raycastTravelAmount)
+    rayZ = rayZ + (normalisedDz * raycastTravelAmount)
+    
+    if rayX >= chunkSettings.width + 1 then
+      rayX = rayX - chunkSettings.width
+      chunkX = chunkX + 1
+      print("Incrementing chunkX")
+    end
+    if rayZ >= chunkSettings.depth + 1 then
+      rayZ = rayZ - chunkSettings.depth
+      chunkZ = chunkZ + 1
+      print("Incrementing chunkZ")
+    end
+    
+    if rayX < 0 then
+      rayX = rayX + chunkSettings.width
+      chunkX = chunkX - 1
+      print("Decreasing chunkX")
+    end
+    if rayZ < 0 then
+      rayZ = rayZ + chunkSettings.depth 
+      chunkZ = chunkZ - 1
+      print("Decreasing chunkZ")
+    end
+    
+    --print("ChunkX: " .. chunkX)
+    --print("ChunkZ: " .. chunkZ)
+    --print("rayX: " .. rayX)
+    --print("rayZ: " .. rayZ)
+    --print("rayY: " .. rayY)
+
+    local test1 = currentLoadedMap[chunkX]
+    local test2 = currentLoadedMap[chunkX][chunkZ]
+
+
+
+    local raycastedBlock = currentLoadedMap[chunkX][chunkZ][findChunkInfoOptimized(math.floor(rayX), math.floor(rayZ), math.floor(rayY))]
+    
+    --print("Found block of type: " .. raycastedBlock)
+    
+    if raycastedBlock ~= 1 then
+      print("Found block of type: " .. raycastedBlock)
+      print("BLOCK IS VALID")
+      foundBlock = true
+      blockType = raycastedBlock
+      blockPos = rl.new("Vector3", math.floor(rayX), math.floor(rayZ), math.floor(rayY))
+      blockDistance = math.sqrt( math.pow(rayX - localCamera.position.x,2) + math.pow(rayY - localCamera.position.y,2) + math.pow(rayZ - localCamera.position.z,2)  )
+    end
+
+    --work out which block is closest, something something math.max
+    --also check if we go off chunk, at which case we change the chunk we access.
+
+    --check object we collide with, is it air (1), if not we set all needed details
+    
+  end
+  
+  
+  if foundBlock == false then
+    print("something broke oops raycast")
+    return 0, 0, 0, 0, 10000
+  end
+  
+  return chunkX, chunkZ, blockPos, blockType, blockDistance
 end
 
 --rl.SetConfigFlags(rl.FLAG_VSYNC_HINT)
@@ -1816,10 +1920,10 @@ function handlePlayerInput()
     local playerDistanceGround
     local playerHeight = 2 + 1
     
-    local ray = rl.new("Ray")
+    --local ray = rl.new("Ray")
     
-    ray.position = localPlayer.Camera.position
-    ray.direction= rl.new("Vector3",0,-1,0)
+    --ray.position = localPlayer.Camera.position
+    --ray.direction= rl.new("Vector3",0,-1,0)
     
     local maxRange = 100
     local currentDistance = maxRange
@@ -1970,7 +2074,22 @@ function handlePlayerInput()
     localPlayer.SelectedSlot = 9
   end
 
-  if rl.IsMouseButtonPressed(rl.MOUSE_BUTTON_LEFT) then    
+  if rl.IsMouseButtonPressed(rl.MOUSE_BUTTON_LEFT) then
+    local raycastchunkX, raycastchunkZ, raycastblockPos, raycastblockType, raycastblockDistance = rayCastDDA(0, 0, 0, 1)
+    
+    local maxRange = 4
+    
+    if raycastblockDistance < maxRange then
+      print("Last Hit was: " .. raycastblockDistance .. " units away.") -- use - below to go into the block
+      currentLoadedMap[raycastchunkX][raycastchunkZ][findChunkInfoOptimized(raycastblockPos.x,raycastblockPos.z,raycastblockPos.y)] = 1
+      chunkMeshGenerator(raycastchunkX,raycastchunkZ)
+  
+      
+    end
+    
+  end
+
+  if rl.IsMouseButtonPressed(rl.MOUSE_BUTTON_LEFT) and false then    
     local centerScreen = rl.new("Vector2",gameSettings.WindowResolution.x/2, gameSettings.WindowResolution.y/2)
     local ray = rl.GetMouseRay(centerScreen, localPlayer.Camera)
     local maxRange = 4
@@ -2045,7 +2164,7 @@ function handlePlayerInput()
     
   end
   
-  if rl.IsMouseButtonPressed(rl.MOUSE_BUTTON_RIGHT) then    
+  if rl.IsMouseButtonPressed(rl.MOUSE_BUTTON_RIGHT) and false then    
     local centerScreen = rl.new("Vector2",gameSettings.WindowResolution.x/2, gameSettings.WindowResolution.y/2)
     local ray = rl.GetMouseRay(centerScreen, localPlayer.Camera)
     local maxRange = 4
