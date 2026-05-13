@@ -2764,13 +2764,38 @@ function menuFunction()
     
   local resX = gameSettings.WindowResolution.x
   local resY = gameSettings.WindowResolution.y
-
+  local pelinNoise
+  
+  if gameSettings.worldType == 1 then
+    pelinNoise = true
+  else  
+    pelinNoise = false
+  end
     
   rl.GuiSetStyle(rl.DEFAULT, rl.TEXT_SIZE, 40);
 
   rl.GuiButton(rl.new("Rectangle",resX * 0.1,resY * 0.05,resX * 0.8,resY * 0.1), "Luacraft")
   
   local play = rl.GuiButton(rl.new("Rectangle",resX * 0.1,resY * 0.75,resX * 0.5,resY * 0.1), "Play")
+
+  local enableWorldGen = rl.GuiCheckBox(rl.new("Rectangle",resX * 0.1,resY * 0.2,resY * 0.1,resY * 0.1), "Enable Infinite Worlds?", gameSettings.allowWorldGeneration)
+  local enableNoiseWorld = rl.GuiCheckBox(rl.new("Rectangle",resX * 0.1,resY * 0.4,resY * 0.1,resY * 0.1), "Enable Perlin Noise Worlds?", pelinNoise)
+
+  if enableWorldGen then
+    gameSettings.allowWorldGeneration = true
+    
+  else
+    gameSettings.allowWorldGeneration = false
+    
+  end
+
+  if enableNoiseWorld then
+    gameSettings.worldType = 1
+    
+  else
+    gameSettings.worldType = 0
+    
+  end
 
   if play then
     currentGameState = "Game"
@@ -2780,11 +2805,32 @@ function menuFunction()
   rl.EndDrawing()
 end
 
+local currentDirectory = ffi.string(rl.GetWorkingDirectory())
+local worldDirectory
+local configDirectory
+
+if rl.DirectoryExists(currentDirectory .. "\\worlds") then
+  worldDirectory = currentDirectory .. "\\worlds"
+else
+  local madeFolder = rl.MakeDirectory(currentDirectory .. "\\worlds")
+  if madeFolder then
+    worldDirectory = currentDirectory .. "\\worlds"
+  end
+end
+
+if worldDirectory then
+  print("Can save worlds!")
+else  
+  print("Cant save worlds!")
+end
+
 while not rl.WindowShouldClose() do
   if currentGameState == "MainMenu" then
+    rl.ShowCursor()
     --currentGameState = "Game" -- update with ui for selecting world, saving / loading and connecting controllers
     menuFunction()
   else
+    rl.HideCursor()
     inGameFunction()
   end
 
