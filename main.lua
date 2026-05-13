@@ -244,7 +244,7 @@ rl.SetWindowState(rl.FLAG_MSAA_4X_HINT)
 
 rl.InitWindow(gameSettings.WindowResolution.x, gameSettings.WindowResolution.y, gameSettings.defaultWindowTitle)
 rl.UpdateCamera(playerInfos.Player1.Camera, rl.CAMERA_FIRST_PERSON)
-
+--rl.EnableDepthTest()
 
 for playerNumber, player in pairs(playerInfos) do
   player.Inventory = {}
@@ -517,6 +517,8 @@ local function findChunkInfoOptimized(X,Z,Y)
   
 end
 
+local raycastPosTemp = rl.new("Vector3",0,0,0)
+
 local function rayCastDDA(StartX, StartY, StartZ, playerNumber)
   
   local localPlayer = playerInfos["Player" .. playerNumber]
@@ -527,9 +529,20 @@ local function rayCastDDA(StartX, StartY, StartZ, playerNumber)
   
   chunkX, chunkZ = getPlayerChunk(playerNumber)
   
+  if not currentLoadedMap[chunkX] or not currentLoadedMap[chunkX][chunkZ] then
+    return 0,0,0,0,10000
+  end
+  
   local dx = localCamera.target.x - localCamera.position.x
   local dy = localCamera.target.y - localCamera.position.y
   local dz = localCamera.target.z - localCamera.position.z
+
+  local cameraDirection = rl.GetCameraForward(localCamera)
+
+  dx = cameraDirection.x
+  dy = cameraDirection.y
+  dz = cameraDirection.z
+
 
   local rayX = localCamera.position.x
   local rayY = localCamera.position.y
@@ -540,7 +553,7 @@ local function rayCastDDA(StartX, StartY, StartZ, playerNumber)
   --apparently a fast way to calculate raycasts in a voxel world, look up DDA.
   local raycastTravelAmount = 0.05 --this isnt dda but eh why not
   local distanceTraveled = 0
-  local maxIterations = 1000
+  local maxIterations = 10000
   local currentIteration = 0
   
   local divisor = math.abs(dx) + math.abs(dy) + math.abs(dz)
@@ -549,9 +562,14 @@ local function rayCastDDA(StartX, StartY, StartZ, playerNumber)
   local normalisedDy = dy/ divisor
   local normalisedDz = dz/ divisor
   
+  normalisedDx = dx
+  normalisedDy = dy
+  normalisedDz = dz
+
   print(normalisedDx)
   print(normalisedDy)
   print(normalisedDz)
+  
   
   while foundBlock == false and currentIteration < maxIterations do 
     currentIteration = currentIteration + 1
@@ -587,6 +605,10 @@ local function rayCastDDA(StartX, StartY, StartZ, playerNumber)
       rayZ = rayZ + chunkSettings.depth 
       chunkZ = chunkZ - 1
       print("Decreasing chunkZ")
+    end
+    
+    if not currentLoadedMap[chunkX] or not currentLoadedMap[chunkX][chunkZ] then
+      return 0,0,0,0,10000
     end
     
     --print("ChunkX: " .. chunkX)
@@ -626,6 +648,7 @@ local function rayCastDDA(StartX, StartY, StartZ, playerNumber)
     return 0, 0, 0, 0, 10000
   end
   
+  raycastPosTemp = rl.new("Vector3", (rayX), (rayY), (rayZ))
   return chunkX, chunkZ, blockPos, blockType, blockDistance
 end
 
@@ -2551,6 +2574,8 @@ function windowDraw()
           
   --rl.DrawCube(rl.new("Vector3",-1,64,-1), 1, 1, 1, rl.RED);
     
+    rl.DrawCube(raycastPosTemp,.1,.1,.1,rl.RED)
+    
     for i = 1, playerCountLocalPlayers, 1 do
       local position = playerInfos["Player" .. i].Camera.position
       rl.DrawCube(position, 1, 1, 1, rl.RED)
@@ -2733,19 +2758,31 @@ end
 local menuCam = rl.new("Camera2D")
 
 function menuFunction()
-  rl.ClearBackground(rl.SKYBLUE)
+  rl.ClearBackground(rl.BLUE)
   rl.BeginDrawing()
-  rl.BeginMode2D(menuCam)
-  
-  
-  rl.EndMode2D()
-  rl.EndDrawing()
+  --rl.BeginMode2D(menuCam)
+    
+  local resX = gameSettings.WindowResolution.x
+  local resY = gameSettings.WindowResolution.y
 
+    
+  rl.GuiSetStyle(rl.DEFAULT, rl.TEXT_SIZE, 40);
+
+  rl.GuiButton(rl.new("Rectangle",resX * 0.1,resY * 0.05,resX * 0.8,resY * 0.1), "Luacraft")
+  
+  local play = rl.GuiButton(rl.new("Rectangle",resX * 0.1,resY * 0.75,resX * 0.5,resY * 0.1), "Play")
+
+  if play then
+    currentGameState = "Game"
+  end
+  
+  --rl.EndMode2D()
+  rl.EndDrawing()
 end
 
 while not rl.WindowShouldClose() do
   if currentGameState == "MainMenu" then
-    currentGameState = "Game" -- update with ui for selecting world, saving / loading and connecting controllers
+    --currentGameState = "Game" -- update with ui for selecting world, saving / loading and connecting controllers
     menuFunction()
   else
     inGameFunction()
