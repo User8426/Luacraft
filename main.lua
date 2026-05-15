@@ -1,4 +1,11 @@
 local ffi = require("ffi")
+local currentDirectory = ffi.string(rl.GetWorkingDirectory())
+local worldDirectory
+local configDirectory
+
+currentLoadedMap = {} -- children are chunks, which then has the info for individual blocks
+currentLoadedMapMeshes = {} -- children are chunks, then its a mesh for the chunk
+currentLoadedMapTransformations = {} -- children are chunks, then its the transformation for collision info
 
 gameSettings = {
   WindowResolution = rl.new("Vector2", 1280,720),
@@ -281,6 +288,28 @@ end
 
 local PI = 3.14159265358979323846
 
+local function tableToString(tableData)
+  local stringData = ""
+  -- meant to be use for chunkdata ONLY.
+  
+  for xi, ytable in pairs(tableData) do
+    for yi, chunkTable in pairs(ytable) do
+      --print(xi .. "//" .. yi .. "//" .. #tableData .. "//" .. #ytable)
+      for blockDatai, blockData in pairs(chunkTable) do
+        --print(blockDatai .. "/" .. #chunkTable)
+        stringData = stringData .. blockData
+        --stringData = stringData .. "[" .. xi .. "]" .. "[" .. yi .. "]" .. "[" .. blockDatai .. "]" .. "[" .. blockData .. "]" .. "EOC"
+      end
+    end
+  end
+  
+  return stringData
+end  
+
+local function stringToTable(string)
+  
+end
+
 local function readSettings()
   
   
@@ -297,6 +326,22 @@ local function readWorldData(worldName)
 end
 
 local function saveWorldData(worldName)
+  --local jsonifiedData = json.encode(currentLoadedMap)
+  
+  local fileSize = 1000000
+  
+  local appropriateFormat = ffi.new("char[?]", fileSize + 1)
+  ffi.copy(appropriateFormat, tableToString(currentLoadedMap))
+  
+  local compressedData = appropriateFormat
+  
+  if worldDirectory then
+    local saveSuccess = rl.SaveFileText(worldDirectory .. "\\" .. worldName .. ".json", compressedData)
+  
+  else
+    print("Not eligible for saving!")
+    
+  end
   
   
 end
@@ -503,10 +548,6 @@ blockInfos = {
     {"Bedrock", true, false, 0, "Bedrock", "Bedrock", "Bedrock", "Bedrock", "Bedrock", "Bedrock"}, -- Name, Render?, DisableFaceCulling, Shape, Up, Down, Left, Right, Forward, Back
 
 }
-
-currentLoadedMap = {} -- children are chunks, which then has the info for individual blocks
-currentLoadedMapMeshes = {} -- children are chunks, then its a mesh for the chunk
-currentLoadedMapTransformations = {} -- children are chunks, then its the transformation for collision info
 
 local function findChunkInfoOptimized(X,Z,Y)
   --replaces current 5d table with 3d, so only chunk position is needed as math can be used
@@ -1932,6 +1973,10 @@ function handlePlayerInput()
   end
   
   
+    if rl.IsKeyPressed(rl.KEY_T) then
+      saveWorldData("TestWorld1")
+    end
+  
     if rl.IsKeyDown(rl.KEY_W) then -- forward
       rl.CameraMoveForward(localPlayer.Camera, walkSpeed * deltaTime, true);
       
@@ -2298,7 +2343,7 @@ function handlePlayerInput()
             
 end 
 
-rl.DisableCursor()
+--rl.DisableCursor()
 
 function singularCubeRender()
                  local cubePosition = rl.new("Vector3",0,0,0)
@@ -2805,9 +2850,6 @@ function menuFunction()
   rl.EndDrawing()
 end
 
-local currentDirectory = ffi.string(rl.GetWorkingDirectory())
-local worldDirectory
-local configDirectory
 
 if rl.DirectoryExists(currentDirectory .. "\\worlds") then
   worldDirectory = currentDirectory .. "\\worlds"
