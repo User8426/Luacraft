@@ -325,7 +325,16 @@ local function saveSettings()
 end
 
 local function readWorldData(worldName)
+  if worldDirectory then --lcw - LuaCraft World
+    local loadedData = rl.LoadFileText(worldDirectory .. "\\" .. worldName .. ".lcw")
+    local result = ffi.new("int[?]", 1000)-- size i think?
+    local decompressedData = rl.DecompressData(loadedData, #loadedData, result)
+    --now undo the format / sent to stringtotable function - may rename because it needs more than just chunk table data
   
+  else
+    print("Not eligible for loading!")
+    
+  end
   
 end
 
