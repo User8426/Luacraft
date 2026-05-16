@@ -289,21 +289,25 @@ end
 local PI = 3.14159265358979323846
 
 local function tableToString(tableData)
-  local stringData = ""
+  local stringData = {}
+  local position = 0 
   -- meant to be use for chunkdata ONLY.
   
   for xi, ytable in pairs(tableData) do
     for yi, chunkTable in pairs(ytable) do
       --print(xi .. "//" .. yi .. "//" .. #tableData .. "//" .. #ytable)
-      for blockDatai, blockData in pairs(chunkTable) do
+      
+      stringData[position] = "[" .. xi .. ":" .. yi .. ":" .. table.concat(chunkTable) .. "]"
+      position = position + 1
+      --for blockDatai, blockData in pairs(chunkTable) do
         --print(blockDatai .. "/" .. #chunkTable)
-        stringData = stringData .. blockData
+        --stringData = stringData .. blockData
         --stringData = stringData .. "[" .. xi .. "]" .. "[" .. yi .. "]" .. "[" .. blockDatai .. "]" .. "[" .. blockData .. "]" .. "EOC"
-      end
+      --end
     end
   end
   
-  return stringData
+  return table.concat(stringData)
 end  
 
 local function stringToTable(string)
@@ -328,15 +332,20 @@ end
 local function saveWorldData(worldName)
   --local jsonifiedData = json.encode(currentLoadedMap)
   
-  local fileSize = 1000000
+  local worldAsString = tableToString(currentLoadedMap)
+  local fileSize = #tableToString(currentLoadedMap)
   
   local appropriateFormat = ffi.new("char[?]", fileSize + 1)
-  ffi.copy(appropriateFormat, tableToString(currentLoadedMap))
+  ffi.copy(appropriateFormat, worldAsString)
   
+  local result = ffi.new("int[?]", 1000)-- size i think?
   local compressedData = appropriateFormat
+  compressedData = rl.CompressData(appropriateFormat, fileSize, result) 
+  -- Compress data (DEFLATE algorithm), memory must be MemFree()
+
   
-  if worldDirectory then
-    local saveSuccess = rl.SaveFileText(worldDirectory .. "\\" .. worldName .. ".json", compressedData)
+  if worldDirectory then --lcw - LuaCraft World
+    local saveSuccess = rl.SaveFileText(worldDirectory .. "\\" .. worldName .. ".lcw", compressedData)
   
   else
     print("Not eligible for saving!")
